@@ -1,0 +1,2265 @@
+﻿<ActorFrame
+InitCommand="%function(self)
+	mawaru_opentime = 0.7;
+	mawaru_closetime = 0.5;
+	mawaru_curgame = 0;
+	
+	mawaru_gamesP1 = {0,0,0,0,0,0,0,0,0,0}
+	mawaru_gamesP2 = {0,0,0,0,0,0,0,0,0,0}
+	
+end"
+OnCommand="%function(self)
+
+	-- kobe!!
+	local RATES = {'1.1','1.2','1.3','1.4','1.5','1.6','1.7','1.8','1.9','2.0'};
+	RATEMOD = 1;
+	for i = 1, table.getn(RATES) do
+		if GAMESTATE:PlayerIsUsingModifier(0,RATES[i]..'xmusic') or GAMESTATE:PlayerIsUsingModifier(1,RATES[i]..'xmusic') then
+			RATEMOD = RATES[i];
+		end
+	end
+	
+	mawaru_reverse = {0,0}
+	
+	for pn=0,1 do
+		if GAMESTATE:PlayerIsUsingModifier(pn,'reverse') then
+			mawaru_reverse[pn+1] = 100;
+		end
+	end
+
+	mawaru_difficultyP1 = 3;
+	mawaru_difficultyP2 = 0;
+	
+	mawaru_speedmodP1 = 2.5;
+	mawaru_speedmodP2 = 2.5;
+	
+	function mawaru_round(num)
+		return math.floor((num * 100) + 0.5) / 100
+	end
+	function mawaru_round1(num)
+		return math.floor((num * 10) + 0.5) / 10
+	end
+	function mawaru_round0(num)
+		return math.floor(num + 0.5)
+	end
+	
+	if GAMESTATE:IsPlayerEnabled(PLAYER_1) then
+		mawaru_difficultyP1 = tonumber(GAMESTATE:GetCurrentSteps(PLAYER_1):GetDifficulty());
+		for i=0, 10, 0.01 do
+			if GAMESTATE:PlayerIsUsingModifier(0,mawaru_round(i)..'x') then mawaru_speedmodP1 = i; break; end
+		end
+	end
+	if GAMESTATE:IsPlayerEnabled(PLAYER_2) then
+		mawaru_difficultyP2 = tonumber(GAMESTATE:GetCurrentSteps(PLAYER_2):GetDifficulty());
+		for i=0, 10, 0.01 do
+			if GAMESTATE:PlayerIsUsingModifier(1,mawaru_round(i)..'x') then mawaru_speedmodP2 = i; break; end
+		end
+	end
+	
+	if mawaru_difficultyP1 and not mawaru_difficultyP2 then
+		mawaru_maxdifficulty = mawaru_difficultyP1
+		mawaru_mindifficulty = mawaru_difficultyP1
+	elseif mawaru_difficultyP2 and not mawaru_difficultyP1 then
+		mawaru_maxdifficulty = mawaru_difficultyP2
+		mawaru_mindifficulty = mawaru_difficultyP2
+	elseif mawaru_difficultyP1 and mawaru_difficultyP2 then
+		mawaru_maxdifficulty = math.max(mawaru_difficultyP1, mawaru_difficultyP2);
+		mawaru_mindifficulty = math.min(mawaru_difficultyP1, mawaru_difficultyP2);
+	else
+		mawaru_maxdifficulty = 3
+		mawaru_mindifficulty = 3
+	end
+	
+	function mawaru_shuffle(t)
+		local n = table.getn(t)
+	 
+		while n >= 2 do
+			-- n is now the last pertinent index
+			local k = math.random(n) -- 1 <= k <= n
+			-- Quick swap
+			t[n], t[k] = t[k], t[n]
+			n = n - 1
+		end
+	 
+		return t
+	end
+	
+	function mawaru_strip(str)
+		local s = str
+		local ret = ''
+		for i=1,string.len(s) do
+			if string.sub(s,i,i) == '\n' then
+				ret = ret..'\n'
+			else
+				ret = ret..' '
+			end
+		end
+		return ret
+	end
+
+	mawaru_actual_rng = math.random(1,3)
+	
+	mawaru_cpu_on = {not GAMESTATE:IsHumanPlayer(0), not GAMESTATE:IsHumanPlayer(1)}
+	mawaru_cpu_controller = {}
+	
+	mawaru_cpus = true;
+	mawaru_cpulevel = 0; --0 = balanced, 1 = impossible
+	mawaru_cpulevelstrings = {'Normal','DESPAIR'};
+	mawaru_cpulevel_default = mawaru_cpulevel;
+	
+	mawaru_gamemenu_allowaccess = false
+	
+	----------------------------------------------------------------
+	-- GOD INPUT ---------------------------------------------------
+	----------------------------------------------------------------
+	god_Directions = {'Left', 'Down', 'Up', 'Right'}
+	function god_CheckForChange(player, arrow)
+		local letter = string.sub(arrow,1,1)
+		local VarName = letter..'pressP'..player
+		local LastSeenVarName = 'LastSeen'..VarName
+	
+		if _G[LastSeenVarName] ~= _G[VarName] then
+			_G[LastSeenVarName] = _G[VarName]
+			if _G[VarName] == 1 then
+				MESSAGEMAN:Broadcast('Step'..arrow..'P'..player)
+			else
+				MESSAGEMAN:Broadcast('Lift'..arrow..'P'..player)
+			end
+		end			
+		if _G[VarName] == 1 then
+			MESSAGEMAN:Broadcast('Hold'..arrow..'P'..player)
+		end
+	end
+	----------------------------------------------------------------
+	-- END GOD INPUT -----------------------------------------------
+	----------------------------------------------------------------
+
+	songName = GAMESTATE:GetCurrentSong():GetSongDir();
+	ispressed = 0; 	-- variable to check if green button is pressed
+	mawaru_keys = {0,0,0,0,0,0,0,0};
+	mawaru_held = {0,0,0,0,0,0,0,0};
+	
+	mawaru_start_delay = 0;
+	
+	mawaru_editor = false;
+	mawaru_divine = false;
+	mawaru_god = false;
+	for pn=1,2 do
+		if GAMESTATE:PlayerIsUsingModifier(pn-1,'DivinEntity') then
+			mawaru_divine = true;
+		end
+		if GAMESTATE:PlayerIsUsingModifier(pn-1,'cel-cmd') or GAMESTATE:PlayerIsUsingModifier(pn-1,',metal-cmd')
+		or GAMESTATE:PlayerIsUsingModifier(pn-1,'cel-cmd-notweens') or GAMESTATE:PlayerIsUsingModifier(pn-1,',metal-cmd-notweens') then
+			mawaru_god = true;
+		end
+	end
+	
+	if GAMESTATE:GetEnv('missionmode') and GAMESTATE:GetEnv('missionmode') == 1 then
+		PREFSMAN:SetPreference('OnlyDedicatedMenuButtons',true);
+	end
+	
+	mawaru_firstSeenBeat = GAMESTATE:GetSongBeat(); --editor
+	
+	--handle start button
+	function mawaru_hitStart()
+		
+	end
+	
+	function mawaru_win(pn)
+		
+	end
+	
+	function mawaru_opposite(pn)
+		if pn == 1 then return 2 else return 1 end
+	end
+	
+	mawaru_text_dirs = {'&LEFT;','&DOWN;','&UP;','&RIGHT;'}
+	
+	function mawaru_dist(a,b)
+		return math.sqrt(math.pow((a:GetX()-b:GetX()),2)+math.pow((a:GetY()-b:GetY()),2));
+	end
+	
+	function mawaru_angle(a,b)
+		return math.atan2(b:GetX()-a:GetX(),b:GetY()-a:GetY());
+	end
+	
+	function mawaru_dist2(ax,ay,bx,by)
+		return math.sqrt(math.pow((ax-bx),2)+math.pow((ay-by),2));
+	end
+	
+	function mawaru_angle2(ax,ay,bx,by)
+		return math.atan2(bx-ax,by-ay);
+	end
+	
+	function mawaru_mag(x,y)
+		return math.sqrt(x*x+y*y)
+	end
+	
+	function mawaru_flipAngleDeg(old_angle,axis)
+		--[[
+		flip_angle(old_angle,axis)
+		function: flips an angle over an axisx7
+		returns: new angle
+		]]
+		
+		old_angle=math.mod(old_angle,360)
+		
+		return math.mod(((2*axis)-old_angle)+360,360)
+	end
+	
+	function mawaru_normrad2deg(ang)
+		ang = math.deg(ang);
+		while ang<0 do
+			ang = ang+360;
+		end
+		while ang>360 do
+			ang = ang-360;
+		end
+		return ang;
+	end
+	
+	function mawaru_sound(soundName)
+		SOUND:PlayOnce(songName..'lua/'..soundName);
+	end
+	
+	function ninja_format(num, zeroes)
+		local ret = tostring(num)
+		while zeroes>0 do
+			if num < math.pow(10,zeroes-1) then
+				ret = '0'..ret
+			end
+			zeroes = zeroes-1;
+		end
+		return ret
+	end
+	
+	function mawaru_4digits(n)
+		if n >= 0 and n < 10 then return '000'..n; end
+		if n > 9 and n < 100 then return '00'..n; end
+		if n > 99 and n < 1000 then return '0'..n; end
+		if n > 999 and n < 10000 then return n; end
+		return n
+	end
+	
+	self:fov(60);
+	
+end"
+><children>
+
+	<Layer
+		Type="Quad"
+		InitCommand="hidden,1"
+		OnCommand="sleep,268.731"
+	/>
+	
+	<Layer
+		Type="Quad"
+		InitCommand="hidden,1"
+		OnCommand="%function(self)
+			fgcurcommand = 1;
+			checked = false;
+			self:queuecommand('Update');
+			
+			mawaru_flap_wag = {5,5,10,15,25,50}
+			mawaru_flantimer = true;
+			
+			function fg_check( num, push )
+				if not push then push = 1 end
+				--safely round all that jazz
+				if math.floor(fgcurcommand * 100 + 0.5) / 100 == num then
+					fgcurcommand = math.floor(((fgcurcommand+push) * 100) + 0.5) / 100
+					return true
+				end
+				return false
+			end
+			
+			function fgchange( beat, index, push )
+				local cur = GAMESTATE:GetSongBeat();
+				if cur>=beat and fg_check(index, push) and cur < beat+1 then
+					Trace(beat..': Running fgchange '..index);
+					return true
+				end
+				return false
+			end
+			
+			function mod_do(str,pn)
+				if pn then
+					GAMESTATE:ApplyGameCommand('mod,'..str,pn);
+				else
+					GAMESTATE:ApplyGameCommand('mod,'..str);
+				end
+			end
+			
+			--lua course :D	/ timed mod management	
+			curmod = 1;
+			--{beat,mod,player}
+			mods = {
+
+			}
+			
+			local fluct = 1;
+			table.insert(mods,{116,'*1 '..(mawaru_speedmodP1+1)..'x',1});
+			table.insert(mods,{116,'*1 '..(mawaru_speedmodP2-1)..'x',2});
+			for i=1,15 do
+				table.insert(mods,{116+i,'*2 '..(mawaru_speedmodP1-(1*fluct))..'x',1});
+				table.insert(mods,{116+i,'*2 '..(mawaru_speedmodP2+(1*fluct))..'x',2});
+				fluct = fluct*-1;
+			end
+			
+			table.insert(mods,{347.5,'*1000 200 beat'});
+			table.insert(mods,{363.5,'*1000 no beat'});
+			
+			local fluct = 1;
+			local lstate = {'drunk','drunk','tipsy','tipsy','drunk','drunk','tipsy','tipsy','drunk'}
+			for j=0,7 do
+				local num = 32
+				for i=0,num do
+					if i==0 then mult = 0.5 else mult = 1 end
+					local amt = (num-i)/num
+					local beat = 372+(0.05*i)+(2*j);
+					
+					table.insert(mods,{beat,'*'..(100000*mult*amt)..' '..(200*amt*fluct)..' '..lstate[j+1]});
+					
+					fluct = fluct*-1;
+				end
+			end
+			
+			table.insert(mods,{630,'*20 '..(mawaru_speedmodP1+5)..'x',1});
+			table.insert(mods,{630,'*20 '..(mawaru_speedmodP2+5)..'x',2});
+			table.insert(mods,{631-.05,'*30 '..(mawaru_speedmodP1)..'x',1});
+			table.insert(mods,{631-.05,'*30 '..(mawaru_speedmodP2)..'x',2});
+			
+			curmod2 = 1;
+			mods2 = {
+				{615.5,'*1000 300 beat'},
+				{619.5-.05,'*10 100 drunk'},
+				{619.5,'*1000 no beat'},
+				{620.5-.05,'*20 -100 drunk'},
+				{621.0-.05,'*20 100 drunk'},
+				{621.5-.05,'*20 -100 drunk'},
+				{622.0-.05,'*10 no drunk'},
+				{623-.05,'*100 700 bumpy'},
+				{624-.05,'*70 no bumpy'},
+				{624,'*0.7 brake'},
+				{628,'*1.2 no brake'},
+				{630.5,'*1000 1000 beat'},
+				{631.5,'*1000 300 beat'},
+				{635.5-.05,'*10 drunk'},
+				{635.5,'*1000 no beat'},
+				{636.5-.05,'*20 -100 drunk'},
+				{637.0-.05,'*20 100 drunk'},
+				{637.5-.05,'*20 -100 drunk'},
+				{638.0-.05,'*10 no drunk'},
+				{639-.05,'*100 700 bumpy'},
+				{640-.05,'*70 no bumpy'},
+				{640,'*5 expand'},
+				{644,'*5 no expand'},
+				{644-.05,'*20 200 tornado'},
+				{644.2,'*2 no tornado'},
+				
+				{648,'*2 bumpy'},
+				{648,'*1.8 150 distant'},
+				{651,'*3 no distant'},
+				{652.5,'*1.8 150 hallway'},
+				{655.5,'*3 no hallway'},
+				{657,'*1.8 150 distant'},
+				{660-.05,'*10 no distant'},
+				{660.000-.05,'*10 stealth'},
+				{660.750-.05,'*10 no stealth'},
+				{661.500-.05,'*10 stealth'},
+				{662.250-.05,'*10 no stealth'},
+				{664,'*60 1256 dizzy, *3 120 wave'},
+				{667,'*60 no dizzy, wave'},
+				
+				{668,'*2 bumpy'},
+				{668,'*1.8 150 distant'},
+				{671,'*3 no distant'},
+				{672.5,'*1.8 150 hallway'},
+				{675.5,'*3 no hallway'},
+				{677,'*1.8 150 distant'},
+				{680-.05,'*10 no distant'},
+				{680-.05,'*10 stealth'},
+				{680.75-.05,'*10 no stealth'},
+				{681.5-.05,'*10 stealth'},
+				{682.25-.05,'*10 no stealth'},
+				{684,'*60 1256 dizzy, *3 120 wave'},
+				{686-.05,'*10 mini'},
+				{686.667-.05,'*20 -100 mini'},
+				{687.333-.05,'*20 mini mini'},
+			}
+			
+			
+--SCREAMING GUMBALL / timed message broadcaster
+curmessage = 1;
+--{beat,message,persist}
+messages = {
+{0,'Close'},
+{0,'Intro'},
+{2,'ShowSparkles'},
+{2,'Close2'},
+{2,'Close130BPM'},
+{3.75,'TitleText'},
+{8,'Subtitle'},
+--{20,'PopUp'},
+{20,'Instructions'},
+{32,'HideSparkles'},
+{32,'NoInstructions'},
+{33.8,'Lawsuit'},
+{35,'MainExplode'},
+{35,'TextA'},
+{36,'Open'},
+{40,'Open2'},
+{40,'Open130BPM'},
+{42,'TextAOff'},
+{59,'Close2'},
+{62,'TextB'},
+{65.5,'Open2'},
+{68,'TextBOff'},
+{83,'Close2'},
+{86,'TextC'},
+{88,'ShowGame1'},
+{90,'Open2'},
+{92,'TextCSmall'},
+{98,'TextCOff'},
+{99,'Close2'},
+{99,'Close130BPM'},
+{100,'Close3'},
+{100,'Close145BPM'},
+{104,'HideGame1'},
+{104,'Open2'},
+{104,'Open130BPM'},
+{104,'Speedup130BPM'},
+{110,'Fade145BPM'},
+{110,'TextD'},
+{113.5,'Open3'},
+{116,'TextDOff'},
+{131,'Close3'},
+{135,'TextE'},
+{136,'ShowGame2'},
+{138,'Open3'},
+{140,'TextEOff'},
+{155.5,'Close3'},
+{158,'HideGame2'},
+{159,'TextF'},
+{160,'ShowGame3'},
+{162,'Open3'},
+{164,'TextFSmall'},
+{192,'TextFOff'},
+{195,'Close3'},
+{195,'Close145BPM'},
+{196,'Close4'},
+{196,'Close160BPM'},
+{200,'HideGame3'},
+{200,'Open145BPM'},
+{200,'Open3'},
+{200,'Speedup145BPM'},
+{206,'Fade160BPM'},
+{212,'TextG'},
+{212,'ShowGame4'},
+{216,'Open4'},
+{218,'TextGOff'},
+{236,'Close4'},
+{236,'TextH'},
+{240,'HideGame4'},
+{240,'ShowGame5'},
+{240.5,'Open4'},
+{241,'TextHOff'},
+{275,'Close4'},
+{276,'TextI'},
+{280,'HideGame5'},
+{280,'ShowGame6'},
+{281,'Open4'},
+{281,'TextIOff'},
+{324,'Static2'},
+{324,'HideGame6'},
+{324,'ShowGame7'},
+{330,'Judge3'},
+{331,'Close4'},
+{331,'Close160BPM'},
+{332,'Close5'},
+{332,'Close180BPM'},
+{336,'HideGame7'},
+{336,'Open160BPM'},
+{336,'Open4'},
+{336,'Speedup160BPM'},
+{342,'Fade180BPM'},
+{344,'TextJ'},
+{345,'Open5'},
+{348,'TextJOff'},
+{363,'Close5'},
+{364,'TextK'},
+{368,'ShowGame8'},
+{369,'Open5'},
+{370,'TextKOff'},
+{387,'Close5'},
+{388,'TextL'},
+{388,'HideGame8'},
+{392,'ShowGame9'},
+{394,'Open5'},
+{397,'TextLSmall'},
+{426,'TextLOff'},
+{427,'Close5'},
+{427,'Close180BPM'},
+{427,'Judge4'},
+{428,'Close0BPM'},
+{432,'HideGame9'},
+{433,'Open5Slow'},
+{433,'Open180BPM'},
+{442,'Fade0BPM'},
+{444,'ShowDoor6',true},
+{444,'Close6'},
+{448,'TextM'},
+{448,'ShowGame10'},
+{451,'Open6'},
+{452,'TextMSmall'},
+{474,'TextMOff'},
+{475,'Close6'},
+{476,'Judge5'},
+{480,'TextN'},
+{480,'HideGame10'},
+{480,'ShowGame11'},
+{483,'Open6'},
+{484,'TextNSmall'},
+{514,'TextNOff'},
+{515,'Close6'},
+{516,'Judge6'},
+{519,'TextO'},
+{520,'HideGame11'},
+{520,'ShowGame12'},
+{524,'Open6'},
+{524,'TextOSmall'},
+{582,'TextOOff'},
+{583,'Close7'},
+{584,'Judge7'},
+{588,'HideGame12'},
+{592,'TextBoss'},
+{603,'TextBossOff'},
+{604,'TextP'},
+{611,'FlanOn'},
+{612,'Open7'},
+{612,'TextPOff'},
+{685.7,'HurtBoss'},
+{686,'RedFlashQ'},
+{687,'Close4'},
+{687,'ShowSparkles2'},
+{688,'Ending'},
+{688,'PopUp'},
+{692,'FlanOff'},
+{695.9,'EndingText2'},
+{696,'Ending2'},
+{700,'GoDown'},
+{701.8,'Lawsuit'},
+{703,'HideSparkles'},
+{703,'MainExplode2'},
+{703,'RemoveField'},
+{703,'ShowScore'},
+{703,'FinalScores'},
+{703,'Open4'},
+{714,'UnloadShit'},
+}
+
+--TARONUKE GETS EVEN LAZIER
+curvar = 1;
+--{beat,var,value}
+variablesets = {
+{0,'mawaru_opentime',0.7},
+{0,'mawaru_closetime',0.5},
+{0,'mawaru_curgame',-1},
+{20,'mawaru_curgame',0},
+{88,'mawaru_curgame',1},
+{104,'mawaru_curgame',0},
+{136,'mawaru_curgame',2},
+{158,'mawaru_curgame',0},
+{160,'mawaru_curgame',3},
+{212,'mawaru_curgame',4},
+{216,'mawaru_opentime',0.5},
+{216,'mawaru_closetime',0.4},
+{240,'mawaru_curgame',5},
+{280,'mawaru_curgame',6},
+{324,'mawaru_curgame',7},
+{336,'mawaru_curgame',0},
+{367,'mawaru_opentime',0.4},
+{367,'mawaru_closetime',0.3},
+{368,'mawaru_curgame',8},
+{392,'mawaru_curgame',9},
+{431,'mawaru_opentime',2},
+{431,'mawaru_closetime',1},
+{432,'mawaru_curgame',0},
+{438,'mawaru_opentime',0.6},
+{438,'mawaru_closetime',0.6},
+{448,'mawaru_curgame',10},
+{474,'mawaru_opentime',0.45},
+{474,'mawaru_closetime',0.45},
+{480,'mawaru_curgame',11},
+{514,'mawaru_opentime',0.35},
+{514,'mawaru_closetime',0.35},
+{520,'mawaru_curgame',12},
+{588,'mawaru_curgame',0},
+{588,'mawaru_opentime',0.6},
+{588,'mawaru_closetime',0.5},
+{686,'mawaru_curgame',-1},
+{700,'mawaru_curgame',0},
+{702,'mawaru_opentime',0},
+{702,'mawaru_closetime',0},
+}
+
+mawaru_cpu_inst = {};
+			
+		end"
+		
+		UpdateCommand="%function(self)
+
+			if GAMESTATE:GetSongBeat()>=0.1 and not checked then
+				if SCREENMAN:GetTopScreen():GetChild('PlayerP1') then p1on = true; else p1on = false; end
+				if SCREENMAN:GetTopScreen():GetChild('PlayerP2') then p2on = true; else p2on = false; end
+				
+				P1 = SCREENMAN:GetTopScreen():GetChild('PlayerP1');
+				P2 = SCREENMAN:GetTopScreen():GetChild('PlayerP2');
+				
+				if SCREENMAN:GetTopScreen():GetChild('LifeP1') then LifeP1 = SCREENMAN:GetTopScreen():GetChild('LifeP1') end
+				if SCREENMAN:GetTopScreen():GetChild('LifeP2') then LifeP2 = SCREENMAN:GetTopScreen():GetChild('LifeP2') end
+				if SCREENMAN:GetTopScreen():GetChild('ScoreP1') then ScoreP1 = SCREENMAN:GetTopScreen():GetChild('ScoreP1') end
+				if SCREENMAN:GetTopScreen():GetChild('ScoreP2') then ScoreP2 = SCREENMAN:GetTopScreen():GetChild('ScoreP2') end
+				if SCREENMAN:GetTopScreen():GetChild('BPMDisplay') then BPMDisplay = SCREENMAN:GetTopScreen():GetChild('BPMDisplay') end
+				if SCREENMAN:GetTopScreen():GetChild('LifeFrame') then LifeFrame = SCREENMAN:GetTopScreen():GetChild('LifeFrame') end
+				if SCREENMAN:GetTopScreen():GetChild('ScoreFrame') then ScoreFrame = SCREENMAN:GetTopScreen():GetChild('ScoreFrame') end
+				if SCREENMAN:GetTopScreen():GetChild('Lyrics') then Lyrics = SCREENMAN:GetTopScreen():GetChild('Lyrics') end
+				if SCREENMAN:GetTopScreen():GetChild('SongForeground') then SongForeground = SCREENMAN:GetTopScreen():GetChild('SongForeground') end
+				if SCREENMAN:GetTopScreen():GetChild('SongBackground') then SongBackground = SCREENMAN:GetTopScreen():GetChild('SongBackground') end
+				if SCREENMAN:GetTopScreen():GetChild('Overlay') then Overlay = SCREENMAN:GetTopScreen():GetChild('Overlay') end
+				if SCREENMAN:GetTopScreen():GetChild('Underlay') then Underlay = SCREENMAN:GetTopScreen():GetChild('Underlay') end
+				
+				if ScoreP1 then ScoreP1:zoom(0) end
+				if ScoreP2 then ScoreP2:zoom(0) end
+				if ScoreFrame then ScoreFrame:hidden(1) end
+				
+				--greenbutton
+				if SCREENMAN:GetTopScreen():GetChild('Debug') then
+					textcheck = SCREENMAN:GetTopScreen():GetChild('Debug'):GetText();
+					SCREENMAN:GetTopScreen():GetChild('Debug'):zoom(0);
+				end
+				
+				screen = SCREENMAN:GetTopScreen();
+				
+				mod_gimmickskinp1 = false;
+				mod_gimmickskinp2 = false;
+				
+				if GAMESTATE:PlayerIsUsingModifier(0,'DivinEntity') or
+				GAMESTATE:PlayerIsUsingModifier(0,'metal-cmd') or
+				GAMESTATE:PlayerIsUsingModifier(0,'metal-cmd-notweens') or
+				GAMESTATE:PlayerIsUsingModifier(0,'metal-cmdholds') or
+				GAMESTATE:PlayerIsUsingModifier(0,'cel-cmd') or
+				GAMESTATE:PlayerIsUsingModifier(0,'cel-cmd-notweens') or
+				GAMESTATE:PlayerIsUsingModifier(0,'cel-cmdholds') then
+					mod_gimmickskinp1 = true;
+				end
+				
+				if GAMESTATE:PlayerIsUsingModifier(1,'DivinEntity') or
+				GAMESTATE:PlayerIsUsingModifier(1,'metal-cmd') or
+				GAMESTATE:PlayerIsUsingModifier(1,'metal-cmd-notweens') or
+				GAMESTATE:PlayerIsUsingModifier(1,'metal-cmdholds') or
+				GAMESTATE:PlayerIsUsingModifier(1,'cel-cmd') or
+				GAMESTATE:PlayerIsUsingModifier(1,'cel-cmd-notweens') or
+				GAMESTATE:PlayerIsUsingModifier(1,'cel-cmdholds') then
+					mod_gimmickskinp2 = true;
+				end
+				
+				if GAMESTATE:IsCourseMode() then
+					mod_gimmickskinp1 = true;
+					mod_gimmickskinp2 = true;
+				end
+								
+				if (GAMESTATE:IsHumanPlayer(0) and not mod_gimmickskinp1)
+				or (GAMESTATE:IsHumanPlayer(1) and not mod_gimmickskinp2) then
+					MESSAGEMAN:Broadcast('NoteskinWarning');
+				end
+				
+				checked = true;
+			end
+			
+			local beat = GAMESTATE:GetSongBeat();
+			
+			if fgchange(136,1) then
+				for pn=1,2 do
+					mod_do('*10 '.._G['mawaru_speedmodP'..pn]..'x',pn);
+				end
+				for i=1,2 do
+					local d = 1;
+					if i==2 then d = -1 end
+					local p = -200;
+					if i==2 then p = SCREEN_RIGHT+200 end
+					if _G['P'..i] then
+						_G['P'..i]:x(p);
+						_G['P'..i]:y(SCREEN_CENTER_Y+20);
+						_G['P'..i]:GetChild('Judgment'):x(360*d);
+						_G['P'..i]:GetChild('Combo'):x(360*d);
+					end
+				end
+			end
+			
+			if fgchange(160,2) then
+				for i=1,2 do
+					local d = 1;
+					if i==2 then d = -1 end
+					if _G['P'..i] then
+						_G['P'..i]:x(SCREEN_CENTER_X-(160*d));
+						_G['P'..i]:y(SCREEN_CENTER_Y);
+						_G['P'..i]:GetChild('Judgment'):x(0);
+						_G['P'..i]:GetChild('Combo'):x(0);
+					end
+				end
+			end
+			
+			if fgchange(240,3) then
+				for i=1,2 do
+					local d = 1;
+					if i==2 then d = -1 end
+					local p = -200;
+					if i==2 then p = SCREEN_RIGHT+200 end
+					if _G['P'..i] then
+						_G['P'..i]:x(p);
+						_G['P'..i]:y(SCREEN_CENTER_Y+20);
+						_G['P'..i]:GetChild('Judgment'):x(360*d);
+						_G['P'..i]:GetChild('Combo'):x(360*d);
+					end
+				end
+			end
+			if fgchange(280,4) then
+				for i=1,2 do
+					local d = 1;
+					if i==2 then d = -1 end
+					if _G['P'..i] then
+						_G['P'..i]:x(SCREEN_CENTER_X-(160*d*0.9));
+						_G['P'..i]:y(SCREEN_CENTER_Y+SCREEN_HEIGHT*0.05);
+						_G['P'..i]:zoom(0.9);
+						_G['P'..i]:GetChild('Judgment'):x(0);
+						_G['P'..i]:GetChild('Combo'):x(0);
+					end
+				end
+			end
+			if fgchange(340,5) then
+				for i=1,2 do
+					local d = 1;
+					if i==2 then d = -1 end
+					if _G['P'..i] then
+						_G['P'..i]:x(SCREEN_CENTER_X-(160*d));
+						_G['P'..i]:y(SCREEN_CENTER_Y);
+						_G['P'..i]:zoom(1);
+						_G['P'..i]:GetChild('Judgment'):x(0);
+						_G['P'..i]:GetChild('Combo'):x(0);
+					end
+				end
+			end
+			
+			if fgchange(348,6) then
+				for i=1,2 do
+					if _G['P'..i] then
+						_G['P'..i]:wag();
+						_G['P'..i]:effectmagnitude(0,0,mawaru_flap_wag[_G['mawaru_difficultyP'..i]+1]);
+						_G['P'..i]:effectclock('bgm');
+						_G['P'..i]:effectperiod(2);
+					end
+				end
+			end
+			if fgchange(352,7) then
+				for i=1,2 do
+					if _G['P'..i] then
+						_G['P'..i]:effectmagnitude(mawaru_flap_wag[_G['mawaru_difficultyP'..i]+1]*2,0,0);
+					end
+				end
+			end
+			if fgchange(356,8) then
+				for i=1,2 do
+					if _G['P'..i] then
+						_G['P'..i]:wag();
+						_G['P'..i]:effectmagnitude(0,0,mawaru_flap_wag[_G['mawaru_difficultyP'..i]+1]*-1);
+						_G['P'..i]:effectclock('bgm');
+						_G['P'..i]:effectperiod(2);
+					end
+				end
+			end
+			if fgchange(360,9) then
+				for i=1,2 do
+					if _G['P'..i] then
+						_G['P'..i]:effectmagnitude(mawaru_flap_wag[_G['mawaru_difficultyP'..i]+1]*-2,0,0);
+					end
+				end
+			end
+			if fgchange(364,10) then
+				for i=1,2 do
+					if _G['P'..i] then
+						_G['P'..i]:stopeffect();
+					end
+				end
+			end
+			
+			if fgchange(387,11) then
+				mod_do('*4 -40 reverse, *100 1000 bumpy, *60 60x');
+			end
+			
+			if fgchange(392,12) then
+				mod_do('*100 no drunk, *100 no tipsy, *100 no bumpy');
+				for pn=1,2 do
+					mod_do('*100 '..mawaru_reverse[pn]..' reverse, *1000 '.._G['mawaru_speedmodP'..pn]..'x',pn);
+				end
+			end
+			
+			if fgchange(432,13,0.3) then
+				for i=1,2 do
+					local d = 1;
+					if i==2 then d = -1 end
+					if _G['P'..i] then
+						_G['P'..i]:GetChild('Judgment'):x(-1000*d);
+						_G['P'..i]:GetChild('Combo'):x(-1000*d);
+					end
+				end
+			end
+			if fgchange(448,13.3,0.3) then
+				for i=1,2 do
+					if _G['P'..i] then
+						_G['P'..i]:GetChild('Judgment'):x(0);
+						_G['P'..i]:GetChild('Combo'):x(0);
+					end
+				end
+			end
+			
+			if fgchange(616,13.6,0.4) then
+				for i=1,2 do
+					if _G['P'..i] then
+						_G['P'..i]:wag();
+						_G['P'..i]:effectmagnitude(0,0,mawaru_flap_wag[_G['mawaru_difficultyP'..i]+1]*-1);
+						_G['P'..i]:effectclock('bgm');
+						_G['P'..i]:effectperiod(2);
+					end
+				end
+			end
+			if fgchange(619,14) then
+				for i=1,2 do
+					if _G['P'..i] then
+						_G['P'..i]:stopeffect();
+					end
+				end
+			end
+			if fgchange(632,15) then
+				for i=1,2 do
+					if _G['P'..i] then
+						_G['P'..i]:wag();
+						_G['P'..i]:effectmagnitude(0,0,mawaru_flap_wag[_G['mawaru_difficultyP'..i]+1]*-1);
+						_G['P'..i]:effectclock('bgm');
+						_G['P'..i]:effectperiod(2);
+					end
+				end
+			end
+			if fgchange(635,16) then
+				for i=1,2 do
+					if _G['P'..i] then
+						_G['P'..i]:stopeffect();
+					end
+				end
+			end
+			if fgchange(644,17) then
+				for i=1,2 do
+					local offset = 1;
+					if i == 2 then offset = -1; end
+					if _G['P'..i] then
+						_G['P'..i]:linear(0.2);
+						_G['P'..i]:rotationy(270*offset);
+						_G['P'..i]:decelerate(0.6);
+						_G['P'..i]:rotationy(360*offset);
+						_G['P'..i]:sleep(0);
+						_G['P'..i]:rotationy(0);
+					end
+				end
+			end
+			
+---------------------------------------------------------------------------------------
+----------------------Here we have our messages----------------------------------------
+---------------------------------------------------------------------------------------
+
+			--CPU CONTROLLER
+			if table.getn(mawaru_cpu_inst) > 0 then
+				for i=table.getn(mawaru_cpu_inst),1,-1 do
+					if GAMESTATE:GetSongBeat() > mawaru_cpu_inst[i][1] then
+						if mawaru_cpu_inst[i][2] == 'Clear' then
+							if table.getn(mawaru_cpu_inst[i]) == 3 then
+								mawaru_clear_cpu_controller(mawaru_cpu_inst[i][1],mawaru_cpu_inst[i][3]);
+							else
+								mawaru_clear_cpu_controller(mawaru_cpu_inst[i][1]);
+							end
+						else
+							if table.getn(mawaru_cpu_inst[i]) == 3 then
+								mawaru_cpu_controller[mawaru_cpu_inst[i][3]]:queuecommand(mawaru_cpu_inst[i][2]);
+							else
+								mawaru_cpu_controllers:queuecommand(mawaru_cpu_inst[i][2]);
+							end
+							table.remove(mawaru_cpu_inst,i);
+						end
+					end
+				end
+			end
+			
+			--custom mod reader (c) 2012 #taronuke #yolo #swag #swag #amazon.co.jp #teamproofofconcept #swag
+			while curmod<=table.getn(mods) and GAMESTATE:GetSongBeat()>=mods[curmod][1] do
+				if GAMESTATE:GetSongBeat()<mods[curmod][1]+5 then
+					if table.getn(mods[curmod]) == 3 then
+						GAMESTATE:ApplyGameCommand('mod,'..mods[curmod][2],mods[curmod][3]);
+					else
+						GAMESTATE:ApplyGameCommand('mod,'..mods[curmod][2]);
+					end
+				end
+				curmod = curmod+1;
+			end
+			
+			--custom mod reader (c) 2012 #taronuke #yolo #swag #swag #amazon.co.jp #teamproofofconcept #swag
+			while curmod2<=table.getn(mods2) and GAMESTATE:GetSongBeat()>=mods2[curmod2][1] do
+				if table.getn(mods2[curmod2]) == 3 then
+					GAMESTATE:ApplyGameCommand('mod,'..mods2[curmod2][2],mods2[curmod2][3]);
+				else
+					GAMESTATE:ApplyGameCommand('mod,'..mods2[curmod2][2]);
+				end
+				curmod2 = curmod2+1;
+			end
+			
+			--SCREAMING GUMBALL
+			while curmessage<=table.getn(messages) and GAMESTATE:GetSongBeat()>=messages[curmessage][1] do
+				if GAMESTATE:GetSongBeat()>=messages[curmessage][1]+5 and not messages[curmessage][3] then
+					curmessage = curmessage+1;
+				else
+					MESSAGEMAN:Broadcast(messages[curmessage][2]);
+					curmessage = curmessage+1;
+				end
+			end
+			
+			--TARONUKE GETS EVEN LAZIER
+			while curvar<=table.getn(variablesets) and GAMESTATE:GetSongBeat()>=variablesets[curvar][1] do
+				_G[variablesets[curvar][2]] = variablesets[curvar][3]; --don't autoskip these
+				curvar = curvar+1;
+			end
+			
+			-- GREEN BUTTON CHECK shamelessly stolen from WinDEU --
+			if not ANIMELEAGUE_THEME and SCREENMAN:GetTopScreen():GetChild('Debug') then
+				if textcheck and textcheck ~= SCREENMAN:GetTopScreen():GetChild('Debug'):GetText() and ispressed == 0 then
+					ispressed = 1;
+					--SCREENMAN:SystemMessage('Green pressed');
+					MESSAGEMAN:Broadcast('DisqualifyPlayer1');
+				elseif textcheck and textcheck ~= SCREENMAN:GetTopScreen():GetChild('Debug'):GetText() and ispressed == 1 then
+					ispressed = 0;
+				end
+				textcheck = SCREENMAN:GetTopScreen():GetChild('Debug'):GetText(); -- always set textcheck to current 'give up' text
+			end
+
+---------------------------------------------------------------------------------------
+----------------------DON'T TOUCH IT, KIDDO--------------------------------------------
+---------------------------------------------------------------------------------------
+
+----------------------------------------------------------------
+-- GOD INPUT ---------------------------------------------------
+----------------------------------------------------------------
+			for i,v in ipairs(god_Directions) do
+				god_CheckForChange(1, v)
+				god_CheckForChange(2, v)
+			end
+----------------------------------------------------------------
+-- END GOD INPUT -----------------------------------------------
+----------------------------------------------------------------
+			
+			self:sleep(0.02)
+			self:queuecommand('Update');
+			
+		end"
+		
+	/>
+	
+	<!--Hit the Key-->
+	<GAME File="key"
+	OnCommand="hidden,1"
+	ShowGame1MessageCommand="hidden,0;queuecommand,Start"
+	HideGame1MessageCommand="hidden,1;queuecommand,Kill"/>
+	
+	<!--Rerave-->
+	<GAME File="rerave"
+	OnCommand="hidden,1"
+	ShowGame2MessageCommand="hidden,0;queuecommand,Start"
+	HideGame2MessageCommand="hidden,1;queuecommand,Kill"/>
+	
+	<!--Don't lose your way!!-->
+	<GAME File="ryuko"
+	OnCommand="hidden,1"
+	ShowGame3MessageCommand="hidden,0;queuecommand,Start"
+	HideGame3MessageCommand="hidden,1;queuecommand,Kill"/>
+	
+	<!--Breath-->
+	<GAME File="breath"
+	OnCommand="hidden,1"
+	ShowGame4MessageCommand="hidden,0;queuecommand,Start"
+	HideGame4MessageCommand="hidden,1;queuecommand,Kill"/>
+	
+	<!--Magnetic-->
+	<GAME File="magnetic"
+	OnCommand="hidden,1"
+	ShowGame5MessageCommand="hidden,0;queuecommand,Start"
+	HideGame5MessageCommand="hidden,1;queuecommand,Kill"/>
+	
+	<!--Twitch-->
+	<GAME File="twitch"
+	OnCommand="hidden,1"
+	ShowGame6MessageCommand="hidden,0;queuecommand,Start"
+	HideGame6MessageCommand="hidden,1;queuecommand,Kill"/>
+	
+	<!--Simon says-->
+	<GAME File="doit"
+	OnCommand="hidden,1"
+	ShowGame7MessageCommand="hidden,0;queuecommand,Start"
+	HideGame7MessageCommand="hidden,1;queuecommand,Kill"/>
+	
+	<!--????????-->
+	<GAME File="taotao"
+	OnCommand="hidden,1"
+	ShowGame8MessageCommand="hidden,0;queuecommand,Start"
+	HideGame8MessageCommand="hidden,1;queuecommand,Kill"/>
+	
+	<!--Co operate!-->
+	<GAME File="coop"
+	OnCommand="hidden,1"
+	ShowGame9MessageCommand="hidden,0;queuecommand,Start"
+	HideGame9MessageCommand="hidden,1;queuecommand,Kill"/>
+	
+	<!--Don't get caught!!-->
+	<GAME File="run"
+	OnCommand="hidden,1"
+	ShowGame10MessageCommand="hidden,0;queuecommand,Start"
+	HideGame10MessageCommand="hidden,1;queuecommand,Kill"/>
+	
+	<!--All you can stream buffet!-->
+	<GAME File="stream"
+	OnCommand="hidden,1"
+	ShowGame11MessageCommand="hidden,0;queuecommand,Start"
+	HideGame11MessageCommand="hidden,1;queuecommand,Kill"/>
+	
+	<!--Match me with my twin!-->
+	<GAME File="twin"
+	OnCommand="hidden,1"
+	ShowGame12MessageCommand="hidden,0;queuecommand,Start"
+	HideGame12MessageCommand="hidden,1;queuecommand,Kill"/>
+	
+	<VOX Type="ActorFrame"><children>
+		
+		<!--Bonus round-->
+		<Layer Type="ActorFrame" OnCommand="hidden,1;ztest,1;" ShowDoor6MessageCommand="hidden,0;" HideDoor6MessageCommand="hidden,1;" ><children>
+		
+			<Layer
+				Type="Quad"
+				OnCommand="blend,noeffect;zwrite,1;x,SCREEN_CENTER_X;y,SCREEN_CENTER_Y;zoomtowidth,SCREEN_WIDTH;zoomtoheight,SCREEN_HEIGHT;rotationz,360"
+				Open6MessageCommand="%function(self) self:linear(mawaru_opentime);self:zoomto(SCREEN_WIDTH,SCREEN_HEIGHT);self:rotationz(360);
+				self:x(SCREEN_WIDTH/2); self:y(SCREEN_HEIGHT/2); end"
+				Close6MessageCommand="%function(self) self:linear(mawaru_closetime);self:zoom(0);self:rotationz(0);
+				self:x(SCREEN_WIDTH*0.789); self:y(SCREEN_HEIGHT*0.408); end"
+			/>
+		
+			<Layer File="doors/room" OnCommand="basezoomx,SCREEN_WIDTH/640;basezoomy,SCREEN_HEIGHT/480;x,SCREEN_CENTER_X;y,SCREEN_CENTER_Y;" />
+			<Layer File="doors/hands" OnCommand="basezoomx,SCREEN_WIDTH/640;basezoomy,SCREEN_HEIGHT/480;x,SCREEN_CENTER_X;y,SCREEN_CENTER_Y;" />
+			
+			<Layer File="doors/monitor" OnCommand="basezoomx,SCREEN_WIDTH/640;basezoomy,SCREEN_HEIGHT/480;x,SCREEN_CENTER_X;y,SCREEN_CENTER_Y;
+			glowshift;effectcolor1,11,1,1,0.3;effectcolor2,1,1,1,0;effectperiod,0.2;effectclock,timer" />
+			
+			<Layer Type="ActorFrame" OnCommand="x,SCREEN_WIDTH*0.25;y,SCREEN_HEIGHT*0.625;wag;effectclock,bgm;effectperiod,2;effectmagnitude,0,0,3"><children>
+				<Layer File="doors/taro" OnCommand="y,-58" />
+			</children></Layer>
+			
+			<Layer File="doors/couch" OnCommand="basezoomx,SCREEN_WIDTH/640;basezoomy,SCREEN_HEIGHT/480;x,SCREEN_CENTER_X;y,SCREEN_CENTER_Y;" />
+			
+		</children></Layer>
+		
+		<Layer File="doors/flandre" FlanOnMessageCommand="hidden,0" FlanOffMessageCommand="hidden,1"
+		HurtBossMessageCommand="vibrate;effectmagnitude,3,3,3;rotationz,-10;setstate,1"
+		OnCommand="hidden,1;animate,0;setstate,0;x,SCREEN_CENTER_X;y,SCREEN_HEIGHT*0.4;bob;effectperiod,1;effectmagnitude,0,3,0;zoom,0.6;" />
+		
+		<Layer File="_eurostile outline" OnCommand="x,SCREEN_CENTER_X;y,SCREEN_HEIGHT*0.16;shadowlength,0;zoom,0.9;zoomx,0.8;" Text=""
+		FlanOnMessageCommand="queuecommand,UpdateTimer" FlanOffMessageCommand="%function(self) mawaru_flantimer = false; end"
+		UpdateTimerCommand="%function(self)
+			
+			if mawaru_flantimer then
+				if 257.806-mawaru_song_time > 10 then
+					self:settext(math.max(mawaru_round(257.806-mawaru_song_time),0));
+				elseif 257.806-mawaru_song_time > 0 then
+					self:settext(math.max(mawaru_round(257.806-mawaru_song_time),0));
+					self:diffuse(1,.4,.4,1);
+				else
+					self:settext('0.00');
+					self:diffuse(.6,0,0,1);
+				end
+				
+				self:sleep(0.02);
+				self:queuecommand('UpdateTimer');
+			else
+				self:diffuse(.6,0,0,0);
+			end
+			
+		end"
+		/>
+		
+		<Tint Type="Quad" OnCommand="hidden,1"
+		HurtBossMessageCommand="%function(self) mawaru_sound('sounds/hit2.ogg') end"
+		/>
+		
+		<Tint Type="Quad" OnCommand="zoomto,SCREEN_WIDTH,SCREEN_HEIGHT;x,SCREEN_WIDTH/2;y,SCREEN_HEIGHT/2;diffusealpha,0"
+		RedFlashMessageCommand="diffuse,1,0,0,1;linear,0.4;diffusealpha,0;"
+		RedFlashQMessageCommand="diffuse,1,0,0,0.6;linear,0.2;diffusealpha,0;"
+		/>
+		
+		<Layer
+			File="doors/speed.png"
+			OnCommand="zoomx,SCREEN_WIDTH/640;zoomy,SCREEN_HEIGHT/480;x,SCREEN_CENTER_X-(SCREEN_CENTER_X);y,SCREEN_CENTER_Y;"
+			Close0BPMMessageCommand="sleep,mawaru_closetime/2;linear,mawaru_closetime/2;x,SCREEN_CENTER_X;decelerate,0.2;addx,-20;accelerate,0.2;addx,20"
+			Open0BPMMessageCommand="linear,mawaru_opentime;x,SCREEN_CENTER_X-(190*(SCREEN_WIDTH/640))-(SCREEN_CENTER_X*1.5);"
+			Fade0BPMMessageCommand="linear,0.4;diffusealpha,0;sleep,0;diffusealpha,1;x,SCREEN_CENTER_X-(190*(SCREEN_WIDTH/640))-(SCREEN_CENTER_X*1.5);"
+		/>
+		<Layer
+			File="doors/down.png"
+			OnCommand="zoomx,SCREEN_WIDTH/640;zoomy,SCREEN_HEIGHT/480;x,SCREEN_CENTER_X+(SCREEN_CENTER_X);y,SCREEN_CENTER_Y;"
+			Close0BPMMessageCommand="sleep,mawaru_closetime/2;linear,mawaru_closetime/2;x,SCREEN_CENTER_X;decelerate,0.2;addx,20;accelerate,0.2;addx,-20"
+			Open0BPMMessageCommand="linear,mawaru_opentime;x,SCREEN_CENTER_X+(190*(SCREEN_WIDTH/640))+(SCREEN_CENTER_X*1.5);"
+			Fade0BPMMessageCommand="linear,0.4;diffusealpha,0;sleep,0;diffusealpha,1;x,SCREEN_CENTER_X+(190*(SCREEN_WIDTH/640))+(SCREEN_CENTER_X*1.5);"
+		/>
+	
+		<Layer
+			File="doors/o_L.png"
+			OnCommand="zoomx,SCREEN_WIDTH/640;zoomy,SCREEN_HEIGHT/480;x,SCREEN_CENTER_X-(SCREEN_CENTER_X);y,SCREEN_CENTER_Y;"
+			Close5MessageCommand="sleep,mawaru_closetime/2;linear,mawaru_closetime/2;x,SCREEN_CENTER_X;decelerate,0.2;addx,-20;accelerate,0.2;addx,20"
+			Open5MessageCommand="linear,mawaru_opentime;x,SCREEN_CENTER_X-(190*(SCREEN_WIDTH/640))-(SCREEN_CENTER_X*1.5);"
+			Open5SlowMessageCommand="linear,mawaru_opentime*2;x,SCREEN_CENTER_X-(190*(SCREEN_WIDTH/640))-(SCREEN_CENTER_X*1.5);"
+		/>
+		<Layer
+			File="doors/o_R.png"
+			OnCommand="zoomx,SCREEN_WIDTH/640;zoomy,SCREEN_HEIGHT/480;x,SCREEN_CENTER_X+(SCREEN_CENTER_X);y,SCREEN_CENTER_Y;"
+			Close5MessageCommand="sleep,mawaru_closetime/2;linear,mawaru_closetime/2;x,SCREEN_CENTER_X;decelerate,0.2;addx,20;accelerate,0.2;addx,-20"
+			Open5MessageCommand="linear,mawaru_opentime;x,SCREEN_CENTER_X+(190*(SCREEN_WIDTH/640))+(SCREEN_CENTER_X*1.5);"
+			Open5SlowMessageCommand="linear,mawaru_opentime*2;x,SCREEN_CENTER_X+(190*(SCREEN_WIDTH/640))+(SCREEN_CENTER_X*1.5);"
+		/>
+		<Layer
+			File="doors/o_top.png"
+			OnCommand="basezoomx,SCREEN_WIDTH/640;basezoomy,SCREEN_HEIGHT/480;x,SCREEN_CENTER_X;y,SCREEN_CENTER_Y;diffusealpha,0;zoom,1.3"
+			Close5MessageCommand="decelerate,mawaru_closetime;diffusealpha,1;zoom,1;"
+			Open5MessageCommand="sleep,mawaru_opentime/2;linear,mawaru_opentime;diffusealpha,0;zoom,1.3"
+			Open5SlowMessageCommand="sleep,mawaru_opentime;linear,mawaru_opentime;diffusealpha,0;zoom,1.3"
+		/>
+		
+		<Layer
+			File="doors/180"
+			OnCommand="zoomx,SCREEN_WIDTH/640;zoomy,SCREEN_HEIGHT/480;x,SCREEN_CENTER_X-(SCREEN_CENTER_X);y,SCREEN_CENTER_Y;"
+			Close180BPMMessageCommand="sleep,mawaru_closetime/2;linear,mawaru_closetime/2;x,SCREEN_CENTER_X;decelerate,0.2;addx,-20;accelerate,0.2;addx,20"
+			Open180BPMMessageCommand="linear,mawaru_opentime*2;x,SCREEN_CENTER_X-(190*(SCREEN_WIDTH/640))-(SCREEN_CENTER_X*1.5);"
+			Fade180BPMMessageCommand="linear,0.4;diffusealpha,0;sleep,0;diffusealpha,1;x,SCREEN_CENTER_X-(190*(SCREEN_WIDTH/640))-(SCREEN_CENTER_X*1.5);"
+		/>
+		<Layer
+			File="doors/bpm"
+			OnCommand="zoomx,SCREEN_WIDTH/640;zoomy,SCREEN_HEIGHT/480;x,SCREEN_CENTER_X+(SCREEN_CENTER_X);y,SCREEN_CENTER_Y;"
+			Close180BPMMessageCommand="sleep,mawaru_closetime/2;linear,mawaru_closetime/2;x,SCREEN_CENTER_X;decelerate,0.2;addx,20;accelerate,0.2;addx,-20"
+			Open180BPMMessageCommand="linear,mawaru_opentime*2;x,SCREEN_CENTER_X+(190*(SCREEN_WIDTH/640))+(SCREEN_CENTER_X*1.5);"
+			Fade180BPMMessageCommand="linear,0.4;diffusealpha,0;sleep,0;diffusealpha,1;x,SCREEN_CENTER_X+(190*(SCREEN_WIDTH/640))+(SCREEN_CENTER_X*1.5);"
+		/>
+		
+		<Layer
+			File="doors/speedup"
+			OnCommand="diffusealpha,0;x,SCREEN_CENTER_X;y,SCREEN_CENTER_Y;glowshift;effectcolor1,1,1,1,0.3;effectcolor2,1,1,1,0;effectperiod,0.25;effectclock,bgm"
+			Speedup160BPMMessageCommand="diffusealpha,1;sleep,300/160;linear,0.3;diffusealpha,0;"
+		/>
+	
+		<Layer
+			File="doors/p_L.png"
+			OnCommand="zoomx,SCREEN_WIDTH/640;zoomy,SCREEN_HEIGHT/480;x,SCREEN_CENTER_X-(SCREEN_CENTER_X);y,SCREEN_CENTER_Y;"
+			Close4MessageCommand="sleep,mawaru_closetime/2;linear,mawaru_closetime/2;x,SCREEN_CENTER_X;decelerate,0.2;addx,-20;accelerate,0.2;addx,20"
+			Open4MessageCommand="linear,mawaru_opentime;x,SCREEN_CENTER_X-(190*(SCREEN_WIDTH/640))-(SCREEN_CENTER_X*1.5);"
+		/>
+		<Layer
+			File="doors/p_R.png"
+			OnCommand="zoomx,SCREEN_WIDTH/640;zoomy,SCREEN_HEIGHT/480;x,SCREEN_CENTER_X+(SCREEN_CENTER_X);y,SCREEN_CENTER_Y;"
+			Close4MessageCommand="sleep,mawaru_closetime/2;linear,mawaru_closetime/2;x,SCREEN_CENTER_X;decelerate,0.2;addx,20;accelerate,0.2;addx,-20"
+			Open4MessageCommand="linear,mawaru_opentime;x,SCREEN_CENTER_X+(190*(SCREEN_WIDTH/640))+(SCREEN_CENTER_X*1.5);"
+		/>
+		<Layer
+			File="doors/p_top.png"
+			OnCommand="basezoomx,SCREEN_WIDTH/640;basezoomy,SCREEN_HEIGHT/480;x,SCREEN_CENTER_X;y,SCREEN_CENTER_Y;diffusealpha,0;zoom,1.3"
+			Close4MessageCommand="decelerate,mawaru_closetime;diffusealpha,1;zoom,1;"
+			Open4MessageCommand="sleep,mawaru_opentime/2;linear,mawaru_opentime;diffusealpha,0;zoom,1.3"
+		/>
+		
+		<Layer
+			File="doors/160"
+			OnCommand="zoomx,SCREEN_WIDTH/640;zoomy,SCREEN_HEIGHT/480;x,SCREEN_CENTER_X-(SCREEN_CENTER_X);y,SCREEN_CENTER_Y;"
+			Close160BPMMessageCommand="sleep,mawaru_closetime/2;linear,mawaru_closetime/2;x,SCREEN_CENTER_X;decelerate,0.2;addx,-20;accelerate,0.2;addx,20"
+			Open160BPMMessageCommand="linear,mawaru_opentime;x,SCREEN_CENTER_X-(190*(SCREEN_WIDTH/640))-(SCREEN_CENTER_X*1.5);"
+			Fade160BPMMessageCommand="linear,0.4;diffusealpha,0;sleep,0;diffusealpha,1;x,SCREEN_CENTER_X-(190*(SCREEN_WIDTH/640))-(SCREEN_CENTER_X*1.5);"
+		/>
+		<Layer
+			File="doors/bpm"
+			OnCommand="zoomx,SCREEN_WIDTH/640;zoomy,SCREEN_HEIGHT/480;x,SCREEN_CENTER_X+(SCREEN_CENTER_X);y,SCREEN_CENTER_Y;"
+			Close160BPMMessageCommand="sleep,mawaru_closetime/2;linear,mawaru_closetime/2;x,SCREEN_CENTER_X;decelerate,0.2;addx,20;accelerate,0.2;addx,-20"
+			Open160BPMMessageCommand="linear,mawaru_opentime;x,SCREEN_CENTER_X+(190*(SCREEN_WIDTH/640))+(SCREEN_CENTER_X*1.5);"
+			Fade160BPMMessageCommand="linear,0.4;diffusealpha,0;sleep,0;diffusealpha,1;x,SCREEN_CENTER_X+(190*(SCREEN_WIDTH/640))+(SCREEN_CENTER_X*1.5);"
+		/>
+		
+		<Layer
+			File="doors/speedup"
+			OnCommand="diffusealpha,0;x,SCREEN_CENTER_X;y,SCREEN_CENTER_Y;glowshift;effectcolor1,1,1,1,0.3;effectcolor2,1,1,1,0;effectperiod,0.25;effectclock,bgm"
+			Speedup145BPMMessageCommand="diffusealpha,1;sleep,300/145;linear,0.3;diffusealpha,0;"
+		/>
+		
+		<Layer
+			File="doors/b_L.png"
+			OnCommand="zoomx,SCREEN_WIDTH/640;zoomy,SCREEN_HEIGHT/480;x,SCREEN_CENTER_X-(SCREEN_CENTER_X);y,SCREEN_CENTER_Y;"
+			Close3MessageCommand="sleep,mawaru_closetime/2;linear,mawaru_closetime/2;x,SCREEN_CENTER_X;decelerate,0.2;addx,-20;accelerate,0.2;addx,20"
+			Open3MessageCommand="linear,mawaru_opentime;x,SCREEN_CENTER_X-(190*(SCREEN_WIDTH/640))-(SCREEN_CENTER_X*1.5);"
+		/>
+		<Layer
+			File="doors/b_R.png"
+			OnCommand="zoomx,SCREEN_WIDTH/640;zoomy,SCREEN_HEIGHT/480;x,SCREEN_CENTER_X+(SCREEN_CENTER_X);y,SCREEN_CENTER_Y;"
+			Close3MessageCommand="sleep,mawaru_closetime/2;linear,mawaru_closetime/2;x,SCREEN_CENTER_X;decelerate,0.2;addx,20;accelerate,0.2;addx,-20"
+			Open3MessageCommand="linear,mawaru_opentime;x,SCREEN_CENTER_X+(190*(SCREEN_WIDTH/640))+(SCREEN_CENTER_X*1.5);"
+		/>
+		<Layer
+			File="doors/b_top.png"
+			OnCommand="basezoomx,SCREEN_WIDTH/640;basezoomy,SCREEN_HEIGHT/480;x,SCREEN_CENTER_X;y,SCREEN_CENTER_Y;diffusealpha,0;zoom,1.3"
+			Close3MessageCommand="decelerate,mawaru_closetime;diffusealpha,1;zoom,1;"
+			Open3MessageCommand="sleep,mawaru_opentime/2;linear,mawaru_opentime;diffusealpha,0;zoom,1.3"
+		/>
+		
+		<Layer
+			File="doors/145"
+			OnCommand="zoomx,SCREEN_WIDTH/640;zoomy,SCREEN_HEIGHT/480;x,SCREEN_CENTER_X-(SCREEN_CENTER_X);y,SCREEN_CENTER_Y;"
+			Close145BPMMessageCommand="sleep,mawaru_closetime/2;linear,mawaru_closetime/2;x,SCREEN_CENTER_X;decelerate,0.2;addx,-20;accelerate,0.2;addx,20"
+			Open145BPMMessageCommand="linear,mawaru_opentime;x,SCREEN_CENTER_X-(190*(SCREEN_WIDTH/640))-(SCREEN_CENTER_X*1.5);"
+			Fade145BPMMessageCommand="linear,0.4;diffusealpha,0;sleep,0;diffusealpha,1;x,SCREEN_CENTER_X-(190*(SCREEN_WIDTH/640))-(SCREEN_CENTER_X*1.5);"
+		/>
+		<Layer
+			File="doors/bpm"
+			OnCommand="zoomx,SCREEN_WIDTH/640;zoomy,SCREEN_HEIGHT/480;x,SCREEN_CENTER_X+(SCREEN_CENTER_X);y,SCREEN_CENTER_Y;"
+			Close145BPMMessageCommand="sleep,mawaru_closetime/2;linear,mawaru_closetime/2;x,SCREEN_CENTER_X;decelerate,0.2;addx,20;accelerate,0.2;addx,-20"
+			Open145BPMMessageCommand="linear,mawaru_opentime;x,SCREEN_CENTER_X+(190*(SCREEN_WIDTH/640))+(SCREEN_CENTER_X*1.5);"
+			Fade145BPMMessageCommand="linear,0.4;diffusealpha,0;sleep,0;diffusealpha,1;x,SCREEN_CENTER_X+(190*(SCREEN_WIDTH/640))+(SCREEN_CENTER_X*1.5);"
+		/>
+		
+		<Layer
+			File="doors/speedup"
+			OnCommand="diffusealpha,0;x,SCREEN_CENTER_X;y,SCREEN_CENTER_Y;glowshift;effectcolor1,1,1,1,0.3;effectcolor2,1,1,1,0;effectperiod,0.25;effectclock,bgm"
+			Speedup130BPMMessageCommand="diffusealpha,1;sleep,300/130;linear,0.3;diffusealpha,0;"
+		/>
+		
+		<Layer
+			File="doors/g_L.png"
+			OnCommand="zoomx,SCREEN_WIDTH/640;zoomy,SCREEN_HEIGHT/480;x,SCREEN_CENTER_X-(SCREEN_CENTER_X);y,SCREEN_CENTER_Y;"
+			Close2MessageCommand="sleep,mawaru_closetime/2;linear,mawaru_closetime/2;x,SCREEN_CENTER_X;decelerate,0.2;addx,-20;accelerate,0.2;addx,20"
+			Open2MessageCommand="linear,mawaru_opentime;x,SCREEN_CENTER_X-(190*(SCREEN_WIDTH/640))-(SCREEN_CENTER_X*1.5);"
+		/>
+		<Layer
+			File="doors/g_R.png"
+			OnCommand="zoomx,SCREEN_WIDTH/640;zoomy,SCREEN_HEIGHT/480;x,SCREEN_CENTER_X+(SCREEN_CENTER_X);y,SCREEN_CENTER_Y;"
+			Close2MessageCommand="sleep,mawaru_closetime/2;linear,mawaru_closetime/2;x,SCREEN_CENTER_X;decelerate,0.2;addx,20;accelerate,0.2;addx,-20"
+			Open2MessageCommand="linear,mawaru_opentime;x,SCREEN_CENTER_X+(190*(SCREEN_WIDTH/640))+(SCREEN_CENTER_X*1.5);"
+		/>
+		<Layer
+			File="doors/g_top.png"
+			OnCommand="basezoomx,SCREEN_WIDTH/640;basezoomy,SCREEN_HEIGHT/480;x,SCREEN_CENTER_X;y,SCREEN_CENTER_Y;diffusealpha,0;zoom,1.3"
+			Close2MessageCommand="decelerate,mawaru_closetime;diffusealpha,1;zoom,1;"
+			Open2MessageCommand="sleep,mawaru_opentime/2;linear,mawaru_opentime;diffusealpha,0;zoom,1.3"
+		/>
+		<Layer
+			File="doors/130"
+			OnCommand="zoomx,SCREEN_WIDTH/640;zoomy,SCREEN_HEIGHT/480;x,SCREEN_CENTER_X-(SCREEN_CENTER_X);y,SCREEN_CENTER_Y;"
+			Close130BPMMessageCommand="sleep,mawaru_closetime/2;linear,mawaru_closetime/2;x,SCREEN_CENTER_X;decelerate,0.2;addx,-20;accelerate,0.2;addx,20"
+			Open130BPMMessageCommand="linear,mawaru_opentime;x,SCREEN_CENTER_X-(190*(SCREEN_WIDTH/640))-(SCREEN_CENTER_X*1.5);"
+		/>
+		<Layer
+			File="doors/bpm"
+			OnCommand="zoomx,SCREEN_WIDTH/640;zoomy,SCREEN_HEIGHT/480;x,SCREEN_CENTER_X+(SCREEN_CENTER_X);y,SCREEN_CENTER_Y;"
+			Close130BPMMessageCommand="sleep,mawaru_closetime/2;linear,mawaru_closetime/2;x,SCREEN_CENTER_X;decelerate,0.2;addx,20;accelerate,0.2;addx,-20"
+			Open130BPMMessageCommand="linear,mawaru_opentime;x,SCREEN_CENTER_X+(190*(SCREEN_WIDTH/640))+(SCREEN_CENTER_X*1.5);"
+		/>
+		
+		<Layer
+			File="doors/p_L.png"
+			OnCommand="zoomx,SCREEN_WIDTH/640;zoomy,SCREEN_HEIGHT/480;x,SCREEN_CENTER_X-(SCREEN_CENTER_X);y,SCREEN_CENTER_Y;"
+			CloseMessageCommand="sleep,mawaru_closetime/2;linear,mawaru_closetime/2;x,SCREEN_CENTER_X;decelerate,0.2;addx,-20;accelerate,0.2;addx,20"
+			OpenMessageCommand="linear,mawaru_opentime;x,SCREEN_CENTER_X-(190*(SCREEN_WIDTH/640))-(SCREEN_CENTER_X*1.5);"
+		/>
+		<Layer
+			File="doors/p_R.png"
+			OnCommand="zoomx,SCREEN_WIDTH/640;zoomy,SCREEN_HEIGHT/480;x,SCREEN_CENTER_X+(SCREEN_CENTER_X);y,SCREEN_CENTER_Y;"
+			CloseMessageCommand="sleep,mawaru_closetime/2;linear,mawaru_closetime/2;x,SCREEN_CENTER_X;decelerate,0.2;addx,20;accelerate,0.2;addx,-20"
+			OpenMessageCommand="linear,mawaru_opentime;x,SCREEN_CENTER_X+(190*(SCREEN_WIDTH/640))+(SCREEN_CENTER_X*1.5);"
+		/>
+		<Layer
+			File="doors/p_top.png"
+			OnCommand="basezoomx,SCREEN_WIDTH/640;basezoomy,SCREEN_HEIGHT/480;x,SCREEN_CENTER_X;y,SCREEN_CENTER_Y;diffusealpha,0;zoom,1.3"
+			CloseMessageCommand="decelerate,mawaru_closetime;diffusealpha,1;zoom,1;"
+			OpenMessageCommand="sleep,mawaru_opentime/2;linear,mawaru_opentime;diffusealpha,0;zoom,1.3"
+		/>
+		
+		<Layer
+			File="doors/d_L.png"
+			OnCommand="zoomx,SCREEN_WIDTH/640;zoomy,SCREEN_HEIGHT/480;x,SCREEN_CENTER_X-(SCREEN_CENTER_X);y,SCREEN_CENTER_Y;"
+			Close7MessageCommand="sleep,mawaru_closetime/2;linear,mawaru_closetime/2;x,SCREEN_CENTER_X;decelerate,0.2;addx,-20;accelerate,0.2;addx,20"
+			Open7MessageCommand="linear,mawaru_opentime;x,SCREEN_CENTER_X-(190*(SCREEN_WIDTH/640))-(SCREEN_CENTER_X*1.5);"
+		/>
+		<Layer
+			File="doors/d_R.png"
+			OnCommand="zoomx,SCREEN_WIDTH/640;zoomy,SCREEN_HEIGHT/480;x,SCREEN_CENTER_X+(SCREEN_CENTER_X);y,SCREEN_CENTER_Y;"
+			Close7MessageCommand="sleep,mawaru_closetime/2;linear,mawaru_closetime/2;x,SCREEN_CENTER_X;decelerate,0.2;addx,20;accelerate,0.2;addx,-20"
+			Open7MessageCommand="linear,mawaru_opentime;x,SCREEN_CENTER_X+(190*(SCREEN_WIDTH/640))+(SCREEN_CENTER_X*1.5);"
+		/>
+		<Layer
+			File="doors/d_top.png"
+			OnCommand="basezoomx,SCREEN_WIDTH/640;basezoomy,SCREEN_HEIGHT/480;x,SCREEN_CENTER_X;y,SCREEN_CENTER_Y;diffusealpha,0;zoom,1.3"
+			Close7MessageCommand="decelerate,mawaru_closetime;diffusealpha,1;zoom,1;"
+			Open7MessageCommand="sleep,mawaru_opentime/2;linear,mawaru_opentime;diffusealpha,0;zoom,1.3"
+		/>
+		
+	</children></VOX>
+	
+	<!--Title shit-->
+	<VOX Type="ActorFrame" InitCommand="%function(self) mawaru_title_shit = self; end" ><children>
+		
+		<Layer Type="ActorFrame"
+		InitCommand="x,SCREEN_CENTER_X;y,SCREEN_HEIGHT+400;"
+		IntroMessageCommand="playcommand,InnerIntro;linear,30/160;zoomy,1.08;y,SCREEN_HEIGHT;linear,30/160;zoomy,1;sleep,50/160;queuecommand,Countdown"
+		CountdownCommand="playcommand,InnerCountdown;sleep,10/160;
+		zoomy,1.02;linear,30/160;zoomy,1;sleep,0;zoomy,1.02;linear,30/160;zoomy,1;sleep,0;zoomy,1.02;linear,30/160;zoomy,1;
+		linear,15/160;y,SCREEN_HEIGHT+400;"
+		PopUpMessageCommand="playcommand,InnerPopUp;skewx,0;linear,30/160;zoomy,1.08;y,SCREEN_HEIGHT;linear,30/160;zoomy,1;sleep,50/160;"
+		LawsuitMessageCommand="playcommand,InnerLawsuit;bounceend,0.2;skewx,-0.08;"
+		MainExplodeMessageCommand="linear,15/160;y,SCREEN_HEIGHT+400;"
+		GoDownMessageCommand="linear,0.4;y,SCREEN_HEIGHT+400;"
+		MainExplode2MessageCommand="y,SCREEN_HEIGHT+400;"
+		><children>
+			<Layer File="title/ama.sprite"
+			InitCommand="animate,0;setstate,0;y,-200;croptop,0.005;"
+			InnerIntroCommand=""
+			InnerCountdownCommand="animate,1;setstate,1;sleep,10/160;
+			sleep,30/160;queuecommand,2;sleep,30/160;queuecommand,1;sleep,30/160;queuecommand,0"
+			InnerPopUpCommand="queuecommand,2;"
+			InnerLawsuitCommand="queuecommand,1;"
+			3Command="setstate,2;"
+			2Command="setstate,3;"
+			1Command="setstate,4;"
+			0Command="setstate,5;"
+			/>
+			<Layer File="title/mouth 3x2.png"
+			InitCommand="animate,0;setstate,0;x,4;y,-227;"
+			InnerIntroCommand="sleep,60/160;queuecommand,O"
+			InnerCountdownCommand="queuecommand,I;sleep,30/160;queuecommand,M;sleep,30/160;queuecommand,E;sleep,30/160;queuecommand,I"
+			InnerPopUpCommand="queuecommand,I;"
+			InnerLawsuitCommand="queuecommand,R;"
+			OCommand="setstate,1;"
+			ECommand="setstate,0;"
+			MCommand="setstate,2;"
+			ICommand="setstate,3;"
+			RCommand="setstate,4;"
+			/>
+		</children></Layer>
+		
+		<Layer
+			File="title/mawaru"
+			InitCommand="zoom,SCREEN_WIDTH/640;x,3*SCREEN_CENTER_X;y,SCREEN_CENTER_Y-30"
+			TitleTextMessageCommand="linear,6/160;x,SCREEN_CENTER_X+20;linear,16*60/160;x,SCREEN_CENTER_X-20;"
+			EndingMessageCommand="linear,6/160;x,SCREEN_CENTER_X+20;linear,8*60/160;x,SCREEN_CENTER_X-20;"
+			InstructionsMessageCommand="linear,15/160;x,-SCREEN_CENTER_X;"
+			Ending2MessageCommand="linear,15/160;x,-SCREEN_CENTER_X;"
+		/>
+		<Layer
+			File="title/setsugetsuka"
+			InitCommand="zoom,SCREEN_WIDTH/640;x,-SCREEN_CENTER_X;y,SCREEN_CENTER_Y+20"
+			TitleTextMessageCommand="linear,6/160;x,SCREEN_CENTER_X-20;linear,16*60/160;x,SCREEN_CENTER_X+20;"
+			EndingMessageCommand="linear,6/160;x,SCREEN_CENTER_X-20;linear,8*60/160;x,SCREEN_CENTER_X+20;"
+			InstructionsMessageCommand="linear,15/160;x,3*SCREEN_CENTER_X;"
+			Ending2MessageCommand="linear,15/160;x,3*SCREEN_CENTER_X;"
+		/>
+		
+		<Layer File="text/thanks"
+			InitCommand="zoom,1;diffusealpha,0;"
+			EndingText2MessageCommand="x,SCREEN_CENTER_X;y,SCREEN_CENTER_Y;linear,0.5;diffusealpha,1;"
+			MainExplode2MessageCommand="diffusealpha,0;"
+		/>
+		
+			
+		<!--Sparkles!!-->
+		<VOX File="sparkles"
+		OnCommand="hidden,1"
+		ShowSparklesMessageCommand="hidden,0;queuecommand,Start"
+		ShowSparkles2MessageCommand="hidden,0;queuecommand,Start2"
+		HideSparklesMessageCommand="hidden,1;queuecommand,Kill"/>
+		
+		<Layer Type="Quad" OnCommand="x,SCREEN_CENTER_X;y,SCREEN_HEIGHT*0.8;zoomto,SCREEN_WIDTH,0;diffuse,0,0,0,1;diffusealpha,0.6;"
+		SubtitleMessageCommand="bounceend,0.5;zoomtoheight,128;" InstructionsMessageCommand="linear,0.5;diffusealpha,0;"/>
+		
+		<Layer File="title/sub.sprite" OnCommand="x,SCREEN_CENTER_X;y,SCREEN_HEIGHT*0.8;diffusealpha,0;"
+		SubtitleMessageCommand="%function(self)
+			if srt7_samiplaying then
+				self:Load(songName..'lua/title/sub0010.png');
+				srt7_samiplaying = false
+				--'ok but go fuck yourslef' for first subtitle
+			else
+				self:Load(songName..'lua/title/sub00'..math.random(11,31)..'.png');
+			end
+			self:sleep(0.2);
+			self:linear(0.5);
+			self:diffusealpha(1);
+		end"
+		InstructionsMessageCommand="linear,0.5;diffusealpha,0;"
+		/>
+		
+		<Layer
+			File="title/inst"
+			InitCommand="x,SCREEN_CENTER_X;y,SCREEN_CENTER_Y;diffusealpha,0;"
+			InstructionsMessageCommand="linear,0.5;diffusealpha,1;"
+			NoInstructionsMessageCommand="linear,0.5;diffusealpha,0;"
+		/>
+		
+		<Layer
+			File="title/lawsuit" OnCommand="x,SCREEN_CENTER_X;y,SCREEN_CENTER_Y;zoom,1.5;diffusealpha,0;rotationz,-5"
+			LawsuitMessageCommand="diffusealpha,1;zoom,1.3;bounceend,0.2;zoom,1"
+			MainExplodeMessageCommand="diffusealpha,0;"
+			MainExplode2MessageCommand="diffusealpha,0;"
+		/>
+		
+		<Layer
+			File="text/a" OnCommand="x,SCREEN_CENTER_X;y,SCREEN_CENTER_Y;vibrate;effectmagnitude,2,2,2;diffusealpha,0"
+			TextAMessageCommand="diffusealpha,1;"
+			TextAOffMessageCommand="linear,1;diffusealpha,0;"
+		/>
+		<Layer
+			File="text/b" OnCommand="x,SCREEN_CENTER_X;y,SCREEN_CENTER_Y;vibrate;effectmagnitude,2,2,2;diffusealpha,0"
+			TextBMessageCommand="zoom,1.5;diffusealpha,0;linear,0.4;zoom,1;diffusealpha,1;"
+			TextBOffMessageCommand="linear,0.6;diffusealpha,0;"
+		/>
+		<Layer
+			File="text/c" OnCommand="x,SCREEN_CENTER_X;y,SCREEN_CENTER_Y;vibrate;effectmagnitude,2,2,2;diffusealpha,0"
+			TextCMessageCommand="zoom,1.5;diffusealpha,0;linear,0.4;zoom,1;diffusealpha,1;"
+			TextCSmallMessageCommand="linear,0.5;zoom,0.5;"
+			TextCOffMessageCommand="linear,0.6;diffusealpha,0;"
+		/>
+		<Layer
+			File="text/d" OnCommand="x,SCREEN_CENTER_X;y,SCREEN_CENTER_Y;vibrate;effectmagnitude,2,2,2;diffusealpha,0"
+			TextDMessageCommand="zoom,1.5;diffusealpha,0;linear,0.4;zoom,1;diffusealpha,1;"
+			TextDOffMessageCommand="linear,0.6;diffusealpha,0;"
+		/>
+		<Layer
+			File="text/e" OnCommand="x,SCREEN_CENTER_X;y,SCREEN_CENTER_Y;vibrate;effectmagnitude,2,2,2;diffusealpha,0"
+			TextEMessageCommand="zoom,1.5;diffusealpha,0;linear,0.4;zoom,1;diffusealpha,1;"
+			TextEOffMessageCommand="linear,0.6;diffusealpha,0;"
+		/>
+		<Layer
+			File="text/f" OnCommand="x,SCREEN_CENTER_X;y,SCREEN_CENTER_Y;vibrate;effectmagnitude,2,2,2;diffusealpha,0"
+			TextFMessageCommand="zoom,1.5;diffusealpha,0;linear,0.4;zoom,1;diffusealpha,1;"
+			TextFSmallMessageCommand="linear,0.5;zoom,0.5;y,150;diffusealpha,0.4;"
+			TextFOffMessageCommand="linear,0.6;diffusealpha,0;"
+		/>
+		<Layer
+			File="text/g" OnCommand="x,SCREEN_CENTER_X;y,SCREEN_CENTER_Y;vibrate;effectmagnitude,2,2,2;diffusealpha,0"
+			TextGMessageCommand="zoom,1.5;diffusealpha,0;linear,0.4;zoom,1;diffusealpha,1;"
+			TextGOffMessageCommand="linear,0.6;diffusealpha,0;"
+		/>
+		<Layer
+			File="text/h" OnCommand="x,SCREEN_CENTER_X;y,SCREEN_CENTER_Y;vibrate;effectmagnitude,2,2,2;diffusealpha,0"
+			TextHMessageCommand="zoom,1.5;diffusealpha,0;linear,0.4;zoom,1;diffusealpha,1;"
+			TextHOffMessageCommand="linear,0.6;diffusealpha,0;"
+		/>
+		<Layer
+			File="text/i" OnCommand="x,SCREEN_CENTER_X;y,SCREEN_CENTER_Y;vibrate;effectmagnitude,2,2,2;diffusealpha,0"
+			TextIMessageCommand="zoom,1.5;diffusealpha,0;linear,0.4;zoom,1;diffusealpha,1;"
+			TextIOffMessageCommand="linear,0.6;diffusealpha,0;"
+		/>
+		<Layer
+			File="text/j" OnCommand="x,SCREEN_CENTER_X;y,SCREEN_CENTER_Y;vibrate;effectmagnitude,2,2,2;diffusealpha,0"
+			TextJMessageCommand="zoom,1.5;diffusealpha,0;linear,0.4;zoom,1;diffusealpha,1;"
+			TextJOffMessageCommand="linear,0.6;diffusealpha,0;"
+		/>
+		<Layer
+			File="text/k" OnCommand="x,SCREEN_CENTER_X;y,SCREEN_CENTER_Y;vibrate;effectmagnitude,2,2,2;diffusealpha,0"
+			TextKMessageCommand="zoom,1.5;diffusealpha,0;linear,0.4;zoom,1;diffusealpha,1;"
+			TextKOffMessageCommand="linear,0.6;diffusealpha,0;"
+		/>
+		<Layer
+			File="text/l" OnCommand="x,SCREEN_CENTER_X;y,SCREEN_CENTER_Y;vibrate;effectmagnitude,2,2,2;diffusealpha,0"
+			TextLMessageCommand="zoom,1.5;diffusealpha,0;linear,0.4;zoom,1;diffusealpha,1;"
+			TextLSmallMessageCommand="linear,0.5;zoom,0.5;y,150;diffusealpha,0.4;"
+			TextLOffMessageCommand="linear,0.6;diffusealpha,0;"
+		/>
+		<Layer
+			File="text/m" OnCommand="x,SCREEN_CENTER_X;y,SCREEN_CENTER_Y;vibrate;effectmagnitude,2,2,2;diffusealpha,0"
+			TextMMessageCommand="zoom,1.5;diffusealpha,0;linear,0.4;zoom,1;diffusealpha,1;"
+			TextMSmallMessageCommand="linear,0.5;zoom,0.5;y,150;diffusealpha,0.4;"
+			TextMOffMessageCommand="linear,0.6;diffusealpha,0;"
+		/>
+		<Layer
+			File="text/n" OnCommand="x,SCREEN_CENTER_X;y,SCREEN_CENTER_Y;vibrate;effectmagnitude,2,2,2;diffusealpha,0"
+			TextNMessageCommand="zoom,1.5;diffusealpha,0;linear,0.4;zoom,1;diffusealpha,1;"
+			TextNSmallMessageCommand="linear,0.5;zoom,0.5;diffusealpha,0.4;"
+			TextNOffMessageCommand="linear,0.6;diffusealpha,0;"
+		/>
+		<Layer
+			File="text/o" OnCommand="x,SCREEN_CENTER_X;y,SCREEN_CENTER_Y;vibrate;effectmagnitude,2,2,2;diffusealpha,0"
+			TextOMessageCommand="zoom,1.5;diffusealpha,0;linear,0.4;zoom,1;diffusealpha,1;"
+			TextOSmallMessageCommand="linear,0.5;zoom,0.5;y,100;diffusealpha,0.4;"
+			TextOOffMessageCommand="linear,0.6;diffusealpha,0;"
+		/>
+		<Layer
+			File="text/boss" OnCommand="diffusealpha,0;x,SCREEN_CENTER_X;y,SCREEN_CENTER_Y;"
+			TextBossMessageCommand="linear,0.4;diffusealpha,1;pulse;effectmagnitude,1.2,1,1;effectclock,bgm"
+			TextBossOffMessageCommand="linear,0.5;diffusealpha,0"
+		/>
+		<Layer
+			File="text/p1" OnCommand="x,SCREEN_CENTER_X;y,SCREEN_CENTER_Y;vibrate;effectmagnitude,2,2,2;diffusealpha,0"
+			TextPMessageCommand="zoom,1.5;diffusealpha,0;linear,0.4;zoom,1;diffusealpha,1;"
+			TextPOffMessageCommand="linear,0.6;diffusealpha,0;"
+			Condition="not (GAMESTATE:IsHumanPlayer(0) and GAMESTATE:GetCurrentSteps(0):GetDifficulty() == 5) and
+			not (GAMESTATE:IsHumanPlayer(1) and GAMESTATE:GetCurrentSteps(1):GetDifficulty() == 5)"
+		/>
+		<Layer
+			File="text/p2" OnCommand="x,SCREEN_CENTER_X;y,SCREEN_CENTER_Y;vibrate;effectmagnitude,2,2,2;diffusealpha,0"
+			TextPMessageCommand="zoom,1.5;diffusealpha,0;linear,0.4;zoom,1;diffusealpha,1;"
+			TextPOffMessageCommand="linear,0.6;diffusealpha,0;"
+			Condition="(GAMESTATE:IsHumanPlayer(0) and GAMESTATE:GetCurrentSteps(0):GetDifficulty() == 5) or
+			(GAMESTATE:IsHumanPlayer(1) and GAMESTATE:GetCurrentSteps(1):GetDifficulty() == 5)"
+		/>
+		
+		<Layer
+			File="title/explosion 5x5.sprite" OnCommand="zoom,0;"
+			MainExplodeMessageCommand="animate,1;setstate,0;x,SCREEN_CENTER_X;y,SCREEN_CENTER_Y-20;zoom,12;sleep,1.25;zoom,0;"
+		/>
+		
+		<Layer Type="Quad" InitCommand="hidden,1"
+		RemoveFieldMessageCommand="%function(self)
+			if P1 then P1:x(-9000) end
+			if P2 then P2:x(-9000) end
+		end"
+		/>
+		
+		<!--------------------------------------->
+		<!--------------------------------------->
+		<!--------------------------------------->
+		<!--------------------------------------->
+		<!--------------------------------------->
+		<!--------------------------------------->
+		<!--------------------------------------->
+		<!--------------------------------------->
+		<!-------DON'T JUDGE ME I'M SCARED------->
+		<!--------------------------------------->
+		<!--------------------------------------->
+		<!--------------------------------------->
+		<!--------------------------------------->
+		<!--------------------------------------->
+		<!--------------------------------------->
+		<!--------------------------------------->
+		<!--------------------------------------->
+		
+		<Layer Type="Quad" OnCommand="hidden,1"
+			Judge1MessageCommand="%function(self)
+				if P1 then
+					if mawaru_key_bracketed[1] == 0 then
+						if mawaru_gamesP1[1] ~= 1 then
+							mawaru_gfx_gradep1:setstate(0);
+							--mawaru_sound('sounds/wrong.ogg');
+						else
+							mawaru_gfx_gradep1:setstate(1);
+							mawaru_sound('sounds/good.ogg');
+						end
+						mawaru_gfx_gradep1:diffusealpha(1);
+						mawaru_gfx_gradep1:sleep(0.1);
+						mawaru_gfx_gradep1:diffusealpha(0);
+						mawaru_gfx_gradep1:sleep(0.1);
+						mawaru_gfx_gradep1:diffusealpha(1);
+						mawaru_gfx_gradep1:sleep(1.2);
+						mawaru_gfx_gradep1:diffusealpha(0);
+					else
+						mawaru_gfx_bracketingp1:diffusealpha(1);
+						mawaru_gfx_bracketingp1:sleep(1.4);
+						mawaru_gfx_bracketingp1:diffusealpha(0);
+					end
+				end
+				if P2 then
+					if mawaru_key_bracketed[2] == 0 then
+						if mawaru_gamesP2[1] ~= 1 then
+							mawaru_gfx_gradep2:setstate(0);
+							mawaru_sound('sounds/wrong.ogg');
+						else
+							mawaru_gfx_gradep2:setstate(1);
+							mawaru_sound('sounds/good.ogg');
+						end
+						mawaru_gfx_gradep2:diffusealpha(1);
+						mawaru_gfx_gradep2:sleep(0.1);
+						mawaru_gfx_gradep2:diffusealpha(0);
+						mawaru_gfx_gradep2:sleep(0.1);
+						mawaru_gfx_gradep2:diffusealpha(1);
+						mawaru_gfx_gradep2:sleep(1.2);
+						mawaru_gfx_gradep2:diffusealpha(0);
+					else
+						mawaru_gfx_bracketingp2:diffusealpha(1);
+						mawaru_gfx_bracketingp2:sleep(1.4);
+						mawaru_gfx_bracketingp2:diffusealpha(0);
+					end
+				end
+				mawaru_curjudge = 1;
+				mawaru_speaker:sleep(0.5);
+				mawaru_speaker:queuecommand('Talk');
+			end"
+		/>
+		
+		<Layer Type="Quad" OnCommand="hidden,1"
+			Judge2MessageCommand="%function(self)
+				if P1 then
+					if mawaru_gamesP1[2] ~= 1 then
+						mawaru_gfx_gradep1:setstate(0);
+						mawaru_sound('sounds/wrong.ogg');
+					else
+						mawaru_gfx_gradep1:setstate(1);
+						mawaru_sound('sounds/good.ogg');
+					end
+					mawaru_gfx_gradep1:diffusealpha(1);
+					mawaru_gfx_gradep1:sleep(0.1);
+					mawaru_gfx_gradep1:diffusealpha(0);
+					mawaru_gfx_gradep1:sleep(0.1);
+					mawaru_gfx_gradep1:diffusealpha(1);
+					mawaru_gfx_gradep1:sleep(1.2);
+					mawaru_gfx_gradep1:diffusealpha(0);
+				end
+				if P2 then
+					if mawaru_gamesP2[2] ~= 1 then
+						mawaru_gfx_gradep2:setstate(0);
+						mawaru_sound('sounds/wrong.ogg');
+					else
+						mawaru_gfx_gradep2:setstate(1);
+						mawaru_sound('sounds/good.ogg');
+					end
+					mawaru_gfx_gradep2:diffusealpha(1);
+					mawaru_gfx_gradep2:sleep(0.1);
+					mawaru_gfx_gradep2:diffusealpha(0);
+					mawaru_gfx_gradep2:sleep(0.1);
+					mawaru_gfx_gradep2:diffusealpha(1);
+					mawaru_gfx_gradep2:sleep(1.2);
+					mawaru_gfx_gradep2:diffusealpha(0);
+				end
+				mawaru_curjudge = 2;
+				mawaru_speaker:sleep(0.5);
+				mawaru_speaker:queuecommand('Talk');
+			end"
+		/>
+		
+		<Layer Type="Quad" OnCommand="hidden,1"
+			Judge3MessageCommand="%function(self)
+				if P1 then
+					if not mawaru_doit_disqualifyp1 then
+						mawaru_gamesP1[3] = 1;
+						mawaru_gfx_gradep1:setstate(1);
+						mawaru_sound('sounds/good.ogg');
+						mawaru_gfx_gradep1:diffusealpha(1);
+						mawaru_gfx_gradep1:sleep(0.1);
+						mawaru_gfx_gradep1:diffusealpha(0);
+						mawaru_gfx_gradep1:sleep(0.1);
+						mawaru_gfx_gradep1:diffusealpha(1);
+						mawaru_gfx_gradep1:sleep(1.2);
+						mawaru_gfx_gradep1:diffusealpha(0);
+					end
+				end
+				if P2 then
+					if not mawaru_doit_disqualifyp2 then
+						mawaru_gamesP2[3] = 1;
+						mawaru_gfx_gradep2:setstate(1);
+						mawaru_sound('sounds/good.ogg');
+						mawaru_gfx_gradep2:diffusealpha(1);
+						mawaru_gfx_gradep2:sleep(0.1);
+						mawaru_gfx_gradep2:diffusealpha(0);
+						mawaru_gfx_gradep2:sleep(0.1);
+						mawaru_gfx_gradep2:diffusealpha(1);
+						mawaru_gfx_gradep2:sleep(1.2);
+						mawaru_gfx_gradep2:diffusealpha(0);
+					end
+				end
+				mawaru_curjudge = 3;
+				mawaru_speaker:sleep(0.5);
+				mawaru_speaker:queuecommand('Talk');
+			end"
+		/>
+		
+		<Layer Type="Quad" OnCommand="hidden,1"
+			Judge4MessageCommand="%function(self)
+				if mawaru_gamesP1[4] == 0 or mawaru_gamesP2[4] == 0 then
+					mawaru_sound('sounds/wrong.ogg');
+					mawaru_curjudge = 4;
+					mawaru_speaker:sleep(0.5);
+					mawaru_speaker:queuecommand('Talk');
+				end
+				if P1 then
+					if mawaru_gamesP1[4] == 0 then
+						mawaru_gfx_gradep1:setstate(0);
+						mawaru_gfx_gradep1:diffusealpha(1);
+						mawaru_gfx_gradep1:sleep(0.1);
+						mawaru_gfx_gradep1:diffusealpha(0);
+						mawaru_gfx_gradep1:sleep(0.1);
+						mawaru_gfx_gradep1:diffusealpha(1);
+						mawaru_gfx_gradep1:sleep(1.2);
+						mawaru_gfx_gradep1:diffusealpha(0);
+					end
+				end
+				if P2 then
+					if mawaru_gamesP1[4] == 0 then
+						mawaru_gfx_gradep2:setstate(0);
+						mawaru_gfx_gradep2:diffusealpha(1);
+						mawaru_gfx_gradep2:sleep(0.1);
+						mawaru_gfx_gradep2:diffusealpha(0);
+						mawaru_gfx_gradep2:sleep(0.1);
+						mawaru_gfx_gradep2:diffusealpha(1);
+						mawaru_gfx_gradep2:sleep(1.2);
+						mawaru_gfx_gradep2:diffusealpha(0);
+					end
+				end
+			end"
+		/>
+		
+		<Layer Type="Quad" OnCommand="hidden,1"
+			Judge5MessageCommand="%function(self)
+				if P1 then
+					if mawaru_run_players[1].dead then
+						mawaru_gfx_gradep1:setstate(0);
+						mawaru_sound('sounds/wrong.ogg');
+					else
+						mawaru_gamesP1[5] = 1;
+						mawaru_gfx_gradep1:setstate(1);
+						mawaru_sound('sounds/good.ogg');
+					end
+					mawaru_gfx_gradep1:diffusealpha(1);
+					mawaru_gfx_gradep1:sleep(0.1);
+					mawaru_gfx_gradep1:diffusealpha(0);
+					mawaru_gfx_gradep1:sleep(0.1);
+					mawaru_gfx_gradep1:diffusealpha(1);
+					mawaru_gfx_gradep1:sleep(1.2);
+					mawaru_gfx_gradep1:diffusealpha(0);
+				end
+				if P2 then
+					if mawaru_run_players[2].dead then
+						mawaru_gfx_gradep2:setstate(0);
+						mawaru_sound('sounds/wrong.ogg');
+					else
+						mawaru_gamesP2[5] = 1;
+						mawaru_gfx_gradep2:setstate(1);
+						mawaru_sound('sounds/good.ogg');
+					end
+					mawaru_gfx_gradep2:diffusealpha(1);
+					mawaru_gfx_gradep2:sleep(0.1);
+					mawaru_gfx_gradep2:diffusealpha(0);
+					mawaru_gfx_gradep2:sleep(0.1);
+					mawaru_gfx_gradep2:diffusealpha(1);
+					mawaru_gfx_gradep2:sleep(1.2);
+					mawaru_gfx_gradep2:diffusealpha(0);
+				end
+				mawaru_curjudge = 5;
+				mawaru_speaker:sleep(0.5);
+				mawaru_speaker:queuecommand('Talk');
+			end"
+		/>
+		
+		<Layer Type="Quad" InitCommand="diffusealpha,0"
+		Judge6MessageCommand="%function(self)
+			mawaru_sound('sounds/good.ogg');
+			mawaru_curjudge = 6;
+			mawaru_speaker:sleep(0.5);
+			mawaru_speaker:queuecommand('Talk');
+		end"
+		/>
+		<Layer File="Combo numbers" Text="" OnCommand="x,SCREEN_WIDTH*0.25;y,SCREEN_CENTER_Y-30;zoom,1.3;diffuse,0,1,0,0"
+		Condition="GAMESTATE:IsHumanPlayer(0)"
+		Judge6MessageCommand="%function(self)
+			self:diffusealpha(1);
+			self:settext(mawaru_stream_score[1]);
+			self:sleep(1.5);
+			self:diffusealpha(0);
+		end"
+		/>
+		<Layer File="Combo numbers" Text="" OnCommand="x,SCREEN_WIDTH*0.75;y,SCREEN_CENTER_Y-30;zoom,1.3;diffuse,0,1,0,0"
+		Condition="GAMESTATE:IsHumanPlayer(1)"
+		Judge6MessageCommand="%function(self)
+			self:diffusealpha(1);
+			self:settext(mawaru_stream_score[2]);
+			self:sleep(1.5);
+			self:diffusealpha(0);
+		end"
+		/>
+		<Layer File="_eurostile outline" Text="" OnCommand="x,SCREEN_WIDTH*0.25;y,SCREEN_CENTER_Y+60;zoom,2;diffuse,1,1,1,0;shadowlength,0;"
+		Condition="GAMESTATE:IsHumanPlayer(0)"
+		Judge6MessageCommand="%function(self)
+			self:diffusealpha(1);
+			self:settext('(+'..(mawaru_stream_score[1]/10)..'%)');
+			self:sleep(1.5);
+			self:diffusealpha(0);
+		end"
+		/>
+		<Layer File="_eurostile outline" Text="" OnCommand="x,SCREEN_WIDTH*0.75;y,SCREEN_CENTER_Y+60;zoom,2;diffuse,1,1,1,0;shadowlength,0;"
+		Condition="GAMESTATE:IsHumanPlayer(1)"
+		Judge6MessageCommand="%function(self)
+			self:diffusealpha(1);
+			self:settext('(+'..(mawaru_stream_score[2]/10)..'%)');
+			self:sleep(1.5);
+			self:diffusealpha(0);
+		end"
+		/>
+		
+		<Layer Type="Quad" InitCommand="diffusealpha,0"
+		Judge7MessageCommand="%function(self)
+			mawaru_sound('sounds/good.ogg');
+			mawaru_curjudge = 7;
+			mawaru_speaker:sleep(0.5);
+			mawaru_speaker:queuecommand('Talk');
+		end"
+		/>
+		<Layer File="Combo numbers" Text="" OnCommand="x,SCREEN_WIDTH*0.25;y,SCREEN_CENTER_Y-30;zoom,1.3;diffuse,0,1,0,0"
+		Condition="GAMESTATE:IsHumanPlayer(0)"
+		Judge7MessageCommand="%function(self)
+			self:diffusealpha(1);
+			self:settext(mawaru_twin_score[1]);
+			self:sleep(1.5);
+			self:diffusealpha(0);
+		end"
+		/>
+		<Layer File="Combo numbers" Text="" OnCommand="x,SCREEN_WIDTH*0.75;y,SCREEN_CENTER_Y-30;zoom,1.3;diffuse,0,1,0,0"
+		Condition="GAMESTATE:IsHumanPlayer(1)"
+		Judge7MessageCommand="%function(self)
+			self:diffusealpha(1);
+			self:settext(mawaru_twin_score[2]);
+			self:sleep(1.5);
+			self:diffusealpha(0);
+		end"
+		/>
+		<Layer File="_eurostile outline" Text="" OnCommand="x,SCREEN_WIDTH*0.25;y,SCREEN_CENTER_Y+60;zoom,2;diffuse,1,1,1,0;shadowlength,0;"
+		Condition="GAMESTATE:IsHumanPlayer(0)"
+		Judge7MessageCommand="%function(self)
+			self:diffusealpha(1);
+			self:settext('(+'..(mawaru_twin_score[1])..'%)');
+			self:sleep(1.5);
+			self:diffusealpha(0);
+		end"
+		/>
+		<Layer File="_eurostile outline" Text="" OnCommand="x,SCREEN_WIDTH*0.75;y,SCREEN_CENTER_Y+60;zoom,2;diffuse,1,1,1,0;shadowlength,0;"
+		Condition="GAMESTATE:IsHumanPlayer(1)"
+		Judge7MessageCommand="%function(self)
+			self:diffusealpha(1);
+			self:settext('(+'..(mawaru_twin_score[2])..'%)');
+			self:sleep(1.5);
+			self:diffusealpha(0);
+		end"
+		/>
+		
+		<Layer File="grade" InitCommand="%function(self) mawaru_gfx_gradep1 = self; end"
+		OnCommand="x,SCREEN_WIDTH*0.25;y,SCREEN_CENTER_Y;diffusealpha,0;animate,0"
+		JudgeOffMessageCommand="diffusealpha,0"
+		/>
+		<Layer File="grade" InitCommand="%function(self) mawaru_gfx_gradep2 = self; end"
+		OnCommand="x,SCREEN_WIDTH*0.75;y,SCREEN_CENTER_Y;diffusealpha,0;animate,0"
+		JudgeOffMessageCommand="diffusealpha,0"
+		/>
+		
+		<Layer File="key/bracketing 1x2.png" InitCommand="%function(self) mawaru_gfx_bracketingp1 = self; end"
+		OnCommand="x,SCREEN_WIDTH*0.25;y,SCREEN_CENTER_Y;diffusealpha,0;animate,1"
+		JudgeOffMessageCommand="diffusealpha,0"
+		/>
+		<Layer File="key/bracketing 1x2.png" InitCommand="%function(self) mawaru_gfx_bracketingp2 = self; end"
+		OnCommand="x,SCREEN_WIDTH*0.75;y,SCREEN_CENTER_Y;diffusealpha,0;animate,1"
+		JudgeOffMessageCommand="diffusealpha,0"
+		/>
+		
+		<Layer Type="Quad" OnCommand="x,-1000" InitCommand="%function(self) mawaru_speaker=self end"
+			TalkCommand="%function(self)
+				if mawaru_curjudge == 1 then
+					if mawaru_gamesP1[mawaru_curjudge] == 1 or mawaru_gamesP2[mawaru_curjudge] == 1 then
+						--no sound here
+					else
+						SOUND:PlayOnce(songName..'lua/sounds/keywrong.ogg');
+					end
+				elseif mawaru_curjudge == 6 then
+					SOUND:PlayOnce(songName..'lua/sounds/good_voice_'..math.random(1,3)..'.ogg');
+				elseif mawaru_curjudge == 7 then
+					SOUND:PlayOnce(songName..'lua/sounds/good_voice_'..math.random(1,3)..'.ogg');
+				else
+					if mawaru_gamesP1[mawaru_curjudge] == 1 or mawaru_gamesP2[mawaru_curjudge] == 1 then
+						SOUND:PlayOnce(songName..'lua/sounds/good_voice_'..math.random(1,3)..'.ogg');
+					else
+						SOUND:PlayOnce(songName..'lua/sounds/bad_voice_'..math.random(1,3)..'.ogg');
+					end
+				end
+				
+				if mawaru_curjudge < 6 then
+					MESSAGEMAN:Broadcast('CheckGame'..((mawaru_curjudge*2)-1));
+					self:queuemessage('ShowScore');
+					self:sleep(5);
+					self:queuemessage('HideScore');
+				end
+				
+			end"
+		/>
+		
+	</children></VOX>
+	
+	<INPUTGAME
+		Type="Quad" OnCommand="hidden,1"
+		Debug1MessageCommand="%function(self)
+			--mawaru_gamestate = 'mainmenu'
+			
+			
+		end"
+		
+		DisqualifyPlayer1MessageCommand="%function(self)
+			mawaru_hitStart();
+		end"
+		DisqualifyPlayer2MessageCommand="%function(self)
+			mawaru_hitStart();
+		end"
+		
+		StepLeftP1MessageCommand="%function (self)
+			mawaru_keys[6-5] = 1;
+		end"
+		StepP1LeftPressedMessageCommand="%function (self)
+			--Trace('Entity!');
+			mawaru_keys[6-5] = 1;
+		end"
+		StepDownP1MessageCommand="%function (self)
+			mawaru_keys[7-5] = 1;
+		end"
+		StepP1DownPressedMessageCommand="%function (self)
+			mawaru_keys[7-5] = 1;
+		end"
+		StepUpP1MessageCommand="%function (self)
+			mawaru_keys[8-5] = 1;
+		end"
+		StepP1UpPressedMessageCommand="%function (self)
+			mawaru_keys[8-5] = 1;
+		end"
+		StepRightP1MessageCommand="%function (self)
+			mawaru_keys[9-5] = 1;
+		end"
+		StepP1RightPressedMessageCommand="%function (self)
+			mawaru_keys[9-5] = 1;
+		end"
+		
+		LiftLeftP1MessageCommand="%function (self)
+			mawaru_keys[6-5] = 0;
+		end"
+		StepP1LeftLiftedMessageCommand="%function (self)
+			mawaru_keys[6-5] = 0;
+		end"
+		LiftDownP1MessageCommand="%function (self)
+			mawaru_keys[7-5] = 0;
+		end"
+		StepP1DownLiftedMessageCommand="%function (self)
+			mawaru_keys[7-5] = 0;
+		end"
+		LiftUpP1MessageCommand="%function (self)
+			mawaru_keys[8-5] = 0;
+		end"
+		StepP1UpLiftedMessageCommand="%function (self)
+			mawaru_keys[8-5] = 0;
+		end"
+		LiftRightP1MessageCommand="%function (self)
+			mawaru_keys[9-5] = 0;
+		end"
+		StepP1RightLiftedMessageCommand="%function (self)
+			mawaru_keys[9-5] = 0;
+		end"
+		
+		StepLeftP2MessageCommand="%function (self)
+			mawaru_keys[6-1] = 1;
+		end"
+		StepP2LeftPressedMessageCommand="%function (self)
+			mawaru_keys[6-1] = 1;
+		end"
+		StepDownP2MessageCommand="%function (self)
+			mawaru_keys[7-1] = 1;
+		end"
+		StepP2DownPressedMessageCommand="%function (self)
+			mawaru_keys[7-1] = 1;
+		end"
+		StepUpP2MessageCommand="%function (self)
+			mawaru_keys[8-1] = 1;
+		end"
+		StepP2UpPressedMessageCommand="%function (self)
+			mawaru_keys[8-1] = 1;
+		end"
+		StepRightP2MessageCommand="%function (self)
+			mawaru_keys[9-1] = 1;
+		end"
+		StepP2RightPressedMessageCommand="%function (self)
+			mawaru_keys[9-1] = 1;
+		end"
+		
+		LiftLeftP2MessageCommand="%function (self)
+			mawaru_keys[6-1] = 0;
+		end"
+		StepP2LeftLiftedMessageCommand="%function (self)
+			mawaru_keys[6-1] = 0;
+		end"
+		LiftDownP2MessageCommand="%function (self)
+			mawaru_keys[7-1] = 0;
+		end"
+		StepP2DownLiftedMessageCommand="%function (self)
+			mawaru_keys[7-1] = 0;
+		end"
+		LiftUpP2MessageCommand="%function (self)
+			mawaru_keys[8-1] = 0;
+		end"
+		StepP2UpLiftedMessageCommand="%function (self)
+			mawaru_keys[8-1] = 0;
+		end"
+		LiftRightP2MessageCommand="%function (self)
+			mawaru_keys[9-1] = 0;
+		end"
+		StepP2RightLiftedMessageCommand="%function (self)
+			mawaru_keys[9-1] = 0;
+		end"
+		
+		MenuLeftP2PressMessageCommand="%function (self)
+			mawaru_editor = true;
+			mawaru_divine = false;
+			--mawaru_cpus = false;
+			mawaru_keys[6-1] = 1;
+		end"
+		MenuDownP2PressMessageCommand="%function (self)
+			mawaru_editor = true;
+			mawaru_divine = false;
+			--mawaru_cpus = false;
+			mawaru_keys[7-1] = 1;
+		end"
+		MenuUpP2PressMessageCommand="%function (self)
+			mawaru_editor = true;
+			mawaru_divine = false;
+			--mawaru_cpus = false;
+			mawaru_keys[8-1] = 1;
+			if mawaru_gamestate == 'gamemenu' then
+				mawaru_gamemenu_allowaccess = true;
+			end
+		end"
+		MenuRightP2PressMessageCommand="%function (self)
+			mawaru_editor = true;
+			mawaru_divine = false;
+			--mawaru_cpus = false;
+			mawaru_keys[9-1] = 1;
+		end"
+		MenuLeftP2LiftMessageCommand="%function (self)
+			mawaru_keys[6-1] = 0;
+		end"
+		MenuDownP2LiftMessageCommand="%function (self)
+			mawaru_keys[7-1] = 0;
+		end"
+		MenuUpP2LiftMessageCommand="%function (self)
+			mawaru_keys[8-1] = 0;
+			mawaru_gamemenu_allowaccess = false;
+		end"
+		MenuRightP2LiftMessageCommand="%function (self)
+			mawaru_keys[9-1] = 0;
+		end"
+	/>
+	
+	<Layer Type="Quad" OnCommand="diffusealpha,0;sleep,0.02;queuecommand,SetMe" SetMeCommand="%function(self) mawaru_cpu_controllers = self end"
+	Press1Command="%function(self) for pn = 0,1 do if mawaru_cpu_on[pn+1] then mawaru_keys[1+(pn*4)] = 1 end end end"
+	Press2Command="%function(self) for pn = 0,1 do if mawaru_cpu_on[pn+1] then mawaru_keys[2+(pn*4)] = 1 end end end"
+	Press3Command="%function(self) for pn = 0,1 do if mawaru_cpu_on[pn+1] then mawaru_keys[3+(pn*4)] = 1 end end end"
+	Press4Command="%function(self) for pn = 0,1 do if mawaru_cpu_on[pn+1] then mawaru_keys[4+(pn*4)] = 1 end end end"
+	Lift1Command="%function(self) for pn = 0,1 do if mawaru_cpu_on[pn+1] then mawaru_keys[1+(pn*4)] = 0 end end end"
+	Lift2Command="%function(self) for pn = 0,1 do if mawaru_cpu_on[pn+1] then mawaru_keys[2+(pn*4)] = 0 end end end"
+	Lift3Command="%function(self) for pn = 0,1 do if mawaru_cpu_on[pn+1] then mawaru_keys[3+(pn*4)] = 0 end end end"
+	Lift4Command="%function(self) for pn = 0,1 do if mawaru_cpu_on[pn+1] then mawaru_keys[4+(pn*4)] = 0 end end end"
+	ResetCommand="%function(self) for pn = 0,1 do if mawaru_cpu_on[pn+1] then for i=1,4 do mawaru_keys[i+(pn*4)] = 0 end end end end"
+	/>
+	
+	<Layer Type="Quad" OnCommand="diffusealpha,0;sleep,0.02;queuecommand,SetMe" SetMeCommand="%function(self) mawaru_cpu_controller[1] = self end"
+	Press1Command="%function(self) if mawaru_cpu_on[1] then mawaru_keys[1+(0*4)] = 1 end end"
+	Press2Command="%function(self) if mawaru_cpu_on[1] then mawaru_keys[2+(0*4)] = 1 end end"
+	Press3Command="%function(self) if mawaru_cpu_on[1] then mawaru_keys[3+(0*4)] = 1 end end"
+	Press4Command="%function(self) if mawaru_cpu_on[1] then mawaru_keys[4+(0*4)] = 1 end end"
+	Lift1Command="%function(self) if mawaru_cpu_on[1] then mawaru_keys[1+(0*4)] = 0 end end"
+	Lift2Command="%function(self) if mawaru_cpu_on[1] then mawaru_keys[2+(0*4)] = 0 end end"
+	Lift3Command="%function(self) if mawaru_cpu_on[1] then mawaru_keys[3+(0*4)] = 0 end end"
+	Lift4Command="%function(self) if mawaru_cpu_on[1] then mawaru_keys[4+(0*4)] = 0 end end"
+	ResetCommand="%function(self) if mawaru_cpu_on[1] then for i=1,4 do mawaru_keys[i+(0*4)] = 0 end end end"
+	/>
+	
+	<Layer Type="Quad" OnCommand="diffusealpha,0;sleep,0.02;queuecommand,SetMe" SetMeCommand="%function(self) mawaru_cpu_controller[2] = self end"
+	Press1Command="%function(self) if mawaru_cpu_on[2] then mawaru_keys[1+(1*4)] = 1 end end"
+	Press2Command="%function(self) if mawaru_cpu_on[2] then mawaru_keys[2+(1*4)] = 1 end end"
+	Press3Command="%function(self) if mawaru_cpu_on[2] then mawaru_keys[3+(1*4)] = 1 end end"
+	Press4Command="%function(self) if mawaru_cpu_on[2] then mawaru_keys[4+(1*4)] = 1 end end"
+	Lift1Command="%function(self) if mawaru_cpu_on[2] then mawaru_keys[1+(1*4)] = 0 end end"
+	Lift2Command="%function(self) if mawaru_cpu_on[2] then mawaru_keys[2+(1*4)] = 0 end end"
+	Lift3Command="%function(self) if mawaru_cpu_on[2] then mawaru_keys[3+(1*4)] = 0 end end"
+	Lift4Command="%function(self) if mawaru_cpu_on[2] then mawaru_keys[4+(1*4)] = 0 end end"
+	ResetCommand="%function(self) if mawaru_cpu_on[2] then for i=1,4 do mawaru_keys[i+(1*4)] = 0 end end end"
+	/>
+	
+	<!---static--->		
+	<Layer File="doors/static.sprite" OnCommand="diffusealpha,0;x,SCREEN_CENTER_X;y,SCREEN_CENTER_Y;zoomto,SCREEN_WIDTH,SCREEN_HEIGHT"
+	Static1MessageCommand="finishtweening;diffusealpha,1;sleep,0.1;diffusealpha,0"
+	Static2MessageCommand="finishtweening;diffusealpha,1;sleep,0.2;diffusealpha,0"
+	Static3MessageCommand="finishtweening;diffusealpha,1;sleep,0.3;diffusealpha,0"
+	Static4MessageCommand="finishtweening;diffusealpha,1;sleep,0.4;diffusealpha,0"
+	Static5MessageCommand="finishtweening;diffusealpha,1;sleep,0.5;diffusealpha,0" />
+	
+	<!--This is for the song timer-->
+	<LAER
+		File="Common Normal"
+		Text="test"
+		OnCommand="x,SCREEN_CENTER_X;y,SCREEN_CENTER_Y;effectclock,music;playcommand,SetTime;hidden,1"
+		SetTimeCommand="%function(self) self:settext(self:GetSecsIntoEffect()); mawaru_song_time = tonumber(self:GetText()); self:sleep(0.02); self:queuecommand('SetTime'); end"
+	/>
+	
+<VOX Type="ActorFrame" OnCommand="x,16;y,64" HideScoreMessageCommand="linear,1;y,64" ShowScoreMessageCommand="linear,0.4;y,0" > <children>
+<Layer Type="Quad" OnCommand="vertalign,bottom;horizalign,left;x,-16;y,SCREEN_BOTTOM;zoomto,SCREEN_WIDTH,32;diffuse,0,0,0,0.8;" />
+
+<Layer Condition="GAMESTATE:IsPlayerEnabled(0)" File="smallgrade" OnCommand="zoom,0;x,-16+1*(SCREEN_WIDTH/20);y,SCREEN_BOTTOM-16;animate,0"
+CheckGame1MessageCommand="%function(self) self:setstate(tonumber(mawaru_gamesP1[1])); self:zoom(1); end" />
+<Layer Condition="GAMESTATE:IsPlayerEnabled(0)" File="smallgrade" OnCommand="zoom,0;x,-16+3*(SCREEN_WIDTH/20);y,SCREEN_BOTTOM-16;animate,0"
+CheckGame3MessageCommand="%function(self) self:setstate(tonumber(mawaru_gamesP1[2])); self:zoom(1); end" />
+<Layer Condition="GAMESTATE:IsPlayerEnabled(0)" File="smallgrade" OnCommand="zoom,0;x,-16+5*(SCREEN_WIDTH/20);y,SCREEN_BOTTOM-16;animate,0"
+CheckGame5MessageCommand="%function(self) self:setstate(tonumber(mawaru_gamesP1[3])); self:zoom(1); end" />
+<Layer Condition="GAMESTATE:IsPlayerEnabled(0)" File="smallgrade" OnCommand="zoom,0;x,-16+7*(SCREEN_WIDTH/20);y,SCREEN_BOTTOM-16;animate,0"
+CheckGame7MessageCommand="%function(self) self:setstate(tonumber(mawaru_gamesP1[4])); self:zoom(1); end" />
+<Layer Condition="GAMESTATE:IsPlayerEnabled(0)" File="smallgrade" OnCommand="zoom,0;x,-16+9*(SCREEN_WIDTH/20);y,SCREEN_BOTTOM-16;animate,0"
+CheckGame9MessageCommand="%function(self) self:setstate(tonumber(mawaru_gamesP1[5])); self:zoom(1); end" />
+
+<Layer Condition="GAMESTATE:IsPlayerEnabled(1)" File="smallgrade" OnCommand="zoom,0;x,(SCREEN_WIDTH/2)-16+1*(SCREEN_WIDTH/20);y,SCREEN_BOTTOM-16;animate,0"
+CheckGame1MessageCommand="%function(self) self:setstate(tonumber(mawaru_gamesP2[1])); self:zoom(1); end" />
+<Layer Condition="GAMESTATE:IsPlayerEnabled(1)" File="smallgrade" OnCommand="zoom,0;x,(SCREEN_WIDTH/2)-16+3*(SCREEN_WIDTH/20);y,SCREEN_BOTTOM-16;animate,0"
+CheckGame3MessageCommand="%function(self) self:setstate(tonumber(mawaru_gamesP2[2])); self:zoom(1); end" />
+<Layer Condition="GAMESTATE:IsPlayerEnabled(1)" File="smallgrade" OnCommand="zoom,0;x,(SCREEN_WIDTH/2)-16+5*(SCREEN_WIDTH/20);y,SCREEN_BOTTOM-16;animate,0"
+CheckGame5MessageCommand="%function(self) self:setstate(tonumber(mawaru_gamesP2[3])); self:zoom(1); end" />
+<Layer Condition="GAMESTATE:IsPlayerEnabled(1)" File="smallgrade" OnCommand="zoom,0;x,(SCREEN_WIDTH/2)-16+7*(SCREEN_WIDTH/20);y,SCREEN_BOTTOM-16;animate,0"
+CheckGame7MessageCommand="%function(self) self:setstate(tonumber(mawaru_gamesP2[4])); self:zoom(1); end" />
+<Layer Condition="GAMESTATE:IsPlayerEnabled(1)" File="smallgrade" OnCommand="zoom,0;x,(SCREEN_WIDTH/2)-16+9*(SCREEN_WIDTH/20);y,SCREEN_BOTTOM-16;animate,0"
+CheckGame9MessageCommand="%function(self) self:setstate(tonumber(mawaru_gamesP2[5])); self:zoom(1); end" />
+
+</children> </VOX>
+
+	<VOX
+		Condition="GAMESTATE:IsHumanPlayer(0)"
+		File="_eurostile outline"
+		Text=""
+		OnCommand="x,SCREEN_WIDTH*0.25;y,SCREEN_HEIGHT/2;zoom,0.9;maxwidth,SCREEN_CENTER_X;diffuse,1,0.4,0.4,0"
+		FinalScoresMessageCommand="%function(self)
+			
+			if GAMESTATE:IsHumanPlayer(PLAYER_1) then
+				mawaru_p1sscore = SCREENMAN:GetTopScreen():GetChild('ScoreP1'):GetChild('ScoreDisplayPercentage Percent'):GetChild('PercentP1'):GetText();
+				mawaru_p1sscore = tostring(tonumber(string.sub(mawaru_p1sscore,1,string.len(mawaru_p1sscore) - 1)));
+			end
+			
+			self:sleep(0);
+			self:queuecommand('Show');
+		end"
+		ShowCommand="%function(self)
+		
+			local text = 'Player 1:\n'
+			
+			text = text..'Steps score: '..mawaru_p1sscore..'%\n'
+			
+			mawaru_gamesP1_mb = 0;
+			for i=1, 5 do
+				if mawaru_gamesP1[i] == 1 then mawaru_gamesP1_mb = mawaru_gamesP1_mb+1 end
+			end
+			
+			text = text..'Minigames: '..mawaru_gamesP1_mb..'/5 = +'..(mawaru_gamesP1_mb*5)..'%\n'
+			if mawaru_stream_score[1] >= 0 then
+				text = text..'Streamathon: +'..(mawaru_stream_score[1]/10)..'%\n'
+			end
+			if mawaru_twin_score[1] >= 0 then
+				text = text..'Twins: +'..mawaru_twin_score[1]..'%'
+			end
+			
+			self:settext(text);
+			
+			Trace(tostring(text));
+			
+			uksrt_p1bonus = mawaru_gamesP1_mb*5 + (mawaru_stream_score[1]/10) + mawaru_twin_score[1];
+			uksrt_p1moneyscore = uksrt_p1bonus;
+			
+			if ANIMELEAGUE_THEME and STATSMAN:GetCurStageStats() then
+				local poss = STATSMAN:GetCurStageStats():GetPlayerStageStats(PLAYER_1):GetPossibleDancePoints()
+				local act = STATSMAN:GetCurStageStats():GetPlayerStageStats(PLAYER_1):GetActualDancePoints()
+				local bonus = (mawaru_gamesP1_mb*(poss/20))+(mawaru_stream_score[1]*(poss/1000))+(mawaru_twin_score[1]*(poss/100))
+				STATSMAN:GetCurStageStats():GetPlayerStageStats(PLAYER_1):SetActualDancePoints(act+bonus);
+			end
+			
+			self:diffusealpha(1);
+		end"
+		UnloadShitMessageCommand="linear,0.3;diffusealpha,0;queuecommand,Del"
+		DelCommand="hidden,1"
+	/>
+	
+	<VOX
+		Condition="GAMESTATE:IsHumanPlayer(1)"
+		File="_eurostile outline"
+		Text=""
+		OnCommand="x,SCREEN_WIDTH*0.75;y,SCREEN_HEIGHT/2;zoom,0.9;maxwidth,SCREEN_CENTER_X;diffuse,0.4,0.4,1,0"
+		FinalScoresMessageCommand="%function(self)
+			
+			if GAMESTATE:IsHumanPlayer(PLAYER_2) then
+				mawaru_p2sscore = SCREENMAN:GetTopScreen():GetChild('ScoreP2'):GetChild('ScoreDisplayPercentage Percent'):GetChild('PercentP2'):GetText();
+				mawaru_p2sscore = tostring(tonumber(string.sub(mawaru_p2sscore,1,string.len(mawaru_p2sscore) - 1)));
+			end
+			
+			self:queuecommand('Show');
+		end"
+		ShowCommand="%function(self)
+		
+			local text = 'Player 2:\n'
+			
+			text = text..'Steps score: '..mawaru_p2sscore..'%\n'
+			
+			mawaru_gamesP2_mb = 0;
+			for i=1, 5 do
+				if mawaru_gamesP2[i] == 1 then mawaru_gamesP2_mb = mawaru_gamesP2_mb+1 end
+			end
+			
+			text = text..'Minigames: '..mawaru_gamesP2_mb..'/5 = +'..(mawaru_gamesP2_mb*5)..'%\n'
+			if mawaru_stream_score[2] >= 0 then
+				text = text..'Streamathon: +'..(mawaru_stream_score[2]/10)..'%\n'
+			end
+			if mawaru_twin_score[2] >= 0 then
+				text = text..'Twins: +'..mawaru_twin_score[2]..'%'
+			end
+			
+			self:settext(text);
+			
+			uksrt_p2bonus = mawaru_gamesP2_mb*5 + (mawaru_stream_score[2]/10) + mawaru_twin_score[2];
+			uksrt_p2moneyscore = uksrt_p2bonus;
+			
+			if ANIMELEAGUE_THEME and STATSMAN:GetCurStageStats() then
+				local poss = STATSMAN:GetCurStageStats():GetPlayerStageStats(PLAYER_2):GetPossibleDancePoints()
+				local act = STATSMAN:GetCurStageStats():GetPlayerStageStats(PLAYER_2):GetActualDancePoints()
+				local bonus = (mawaru_gamesP2_mb*(poss/20))+(mawaru_stream_score[2]*(poss/1000))+(mawaru_twin_score[2]*(poss/100))
+				STATSMAN:GetCurStageStats():GetPlayerStageStats(PLAYER_2):SetActualDancePoints(act+bonus);
+			end
+			
+			self:diffusealpha(1);
+		end"
+		UnloadShitMessageCommand="linear,0.3;diffusealpha,0;queuecommand,Del"
+		DelCommand="hidden,1"
+	/>
+	
+	<!--div line-->
+	<VOX Type="Quad" OnCommand="x,SCREEN_CENTER_X;y,SCREEN_CENTER_Y;zoomto,6,SCREEN_HEIGHT;diffuse,1,1,1,0"
+	FinalScoresMessageCommand="diffusealpha,1"
+	UnloadShitMessageCommand="linear,0.3;diffusealpha,0;queuecommand,Del"
+	DelCommand="hidden,1"
+	/>
+	
+	<VOX_END
+		File="title/explosion 5x5.sprite" OnCommand="zoom,0;"
+		MainExplode2MessageCommand="animate,1;setstate,0;x,SCREEN_CENTER_X;y,SCREEN_CENTER_Y-20;zoom,15;sleep,1.25;zoom,0;"
+	/>
+	
+	<ZVOX File="noteskinwarning" OnCommand="x,SCREEN_CENTER_X;y,SCREEN_CENTER_Y;diffusealpha,0"
+	NoteskinWarningMessageCommand="%function(self)
+		songName = GAMESTATE:GetCurrentSong():GetSongDir();
+		SOUND:PlayOnce(songName..'lua/airhorn.ogg');
+		self:linear(0.5);
+		self:diffusealpha(1);
+		self:sleep(8);
+		self:linear(0.4);
+		self:diffusealpha(0);
+	end" />
+	
+</children></ActorFrame>

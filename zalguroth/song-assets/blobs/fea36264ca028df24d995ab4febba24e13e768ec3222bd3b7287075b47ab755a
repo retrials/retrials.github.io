@@ -1,0 +1,26 @@
+<ActorFrame><children>
+<Layer
+File="_black"
+OnCommand="x,SCREEN_CENTER_X;y,SCREEN_CENTER_Y;diffusealpha,0;linear,0.5;diffusealpha,1;sleep,17;linear,0.5;diffusealpha,0"
+/>
+<Layer
+File="@GAMESTATE:GetCurrentSteps(PLAYER_1):GetDifficulty()"
+OnCommand="cropleft,0.15;cropright,0.15;x,SCREEN_CENTER_X-160;vertalign,bottom;y,0;linear,1.2;y,360;linear,4.82;y,360+1600"
+Condition="GAMESTATE:IsHumanPlayer(0)"
+/>
+<Layer
+File="@GAMESTATE:GetCurrentSteps(PLAYER_2):GetDifficulty()"
+OnCommand="cropleft,0.15;cropright,0.15;x,SCREEN_CENTER_X+160;vertalign,bottom;y,0;linear,1.2;y,360;linear,4.82;y,360+1600"
+Condition="GAMESTATE:IsHumanPlayer(1)"
+/>
+<Layer
+File="overlay"
+OnCommand="x,SCREEN_CENTER_X;y,SCREEN_CENTER_Y;diffusealpha,0;linear,0.5;diffusealpha,1;sleep,6;linear,0.5;diffusealpha,0"
+/>
+<Layer
+Type="BitmapText"
+File="_eurostile blue glow"
+Text="Wait, I::thought this::was ITG!?"
+Command="x,SCREEN_CENTER_X;y,SCREEN_CENTER_Y-50;diffusealpha,0;zoom,4;decelerate,0.1;diffusealpha,1;zoom,2;wag;effectperiod,0.4;effectmagnitude,0,0,3;sleep,.5;accelerate,0.3;y,550;linear,0;diffusealpha,0;"
+/>
+</children></ActorFrame>

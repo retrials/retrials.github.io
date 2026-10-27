@@ -1,0 +1,122 @@
+:root {
+  color-scheme: dark;
+  font-family: ui-sans-serif, system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
+}
+
+* { box-sizing: border-box; }
+[hidden] { display: none !important; }
+
+html,
+body {
+  width: 100%;
+  height: 100%;
+  overflow: hidden;
+  background: #000;
+}
+
+body {
+  margin: 0;
+  display: grid;
+  place-items: center;
+}
+
+#canvas {
+  display: block;
+  width: min(100vw, 133.333333vh);
+  height: min(100vh, 75vw);
+  background: #000;
+  outline: none;
+  touch-action: none;
+}
+
+#launch-button {
+  position: fixed;
+  top: 50%;
+  left: 50%;
+  z-index: 3;
+  transform: translate(-50%, -50%);
+  border: 0;
+  border-radius: 6px;
+  padding: 15px 24px;
+  background: #b8f34a;
+  color: #111607;
+  font: 700 15px/1 ui-sans-serif, system-ui, sans-serif;
+  cursor: pointer;
+  box-shadow: 0 8px 32px rgba(0, 0, 0, .45);
+}
+
+#launch-button:hover:not(:disabled) { background: #c9ff5c; }
+#launch-button:focus-visible { outline: 2px solid #fff; outline-offset: 4px; }
+#launch-button:disabled { opacity: .55; cursor: default; }
+
+#engine-log {
+  position: fixed;
+  top: 0;
+  left: 0;
+  z-index: 2;
+  width: min(760px, 82vw);
+  max-height: 42vh;
+  overflow: auto;
+  margin: 0;
+  padding: 10px 12px;
+  border-radius: 0 0 6px 0;
+  background: rgba(0, 0, 0, .72);
+  color: #b8c8c5;
+  font: 10px/1.45 "SFMono-Regular", Consolas, "Liberation Mono", monospace;
+  white-space: pre-wrap;
+  word-break: break-word;
+  pointer-events: none;
+  user-select: none;
+  scrollbar-width: none;
+  text-shadow: 0 1px 2px #000;
+}
+
+#engine-log::-webkit-scrollbar { display: none; }
+
+@media (max-width: 560px) {
+  #engine-log { width: 92vw; max-height: 34vh; padding: 7px 8px; font-size: 8px; }
+}
+
+
+:root { --line: #45484e; --accent: #73a5e3; }
+html, body { height: 100dvh; }
+button, select, input { font: inherit; }
+button, .file-button { border: 1px solid var(--line); border-radius: 2px; background: #363a40; color: #e8e8e8; padding: 4px 7px; cursor: pointer; }
+button:disabled, .file-button:has(input:disabled) { opacity: .45; cursor: default; }
+button:focus-visible, select:focus-visible, .file-button:focus-within { outline: 1px solid var(--accent); }
+#canvas { width: min(100vw, calc(100dvh * 4 / 3)); height: min(100dvh, 75vw); max-height: 100dvh; }
+#settings-button { position: fixed; top: max(6px, env(safe-area-inset-top)); right: max(6px, env(safe-area-inset-right)); z-index: 220; width: 29px; height: 26px; padding: 0; font: 16px monospace; opacity: .75; }
+#settings-button:hover, #settings-button[aria-expanded="true"] { opacity: 1; background: #41658b; }
+#settings-panel { position: fixed; top: calc(max(6px, env(safe-area-inset-top)) + 30px); right: max(6px, env(safe-area-inset-right)); z-index: 210; width: min(350px, calc(100vw - 12px)); max-height: calc(100dvh - 48px - env(safe-area-inset-bottom)); overflow: auto; padding: 7px; background: #22252af5; color: #ddd; border: 1px solid #555b65; box-shadow: 0 6px 22px #0009; font: 12px/1.4 ui-monospace, Consolas, monospace; overscroll-behavior: contain; }
+#settings-panel:not([open]) { display: none; }
+.settings-heading { display: flex; gap: 8px; align-items: center; margin-bottom: 7px; }
+.settings-heading strong { margin-right: auto; }
+#controller-badge { color: #a4aab3; font-size: 10px; }
+.menu-section { margin: 5px 0; border-top: 1px solid #41464e; padding-top: 4px; }
+.menu-section > summary { cursor: pointer; padding: 3px; background: #30353d; color: #e0e7f0; }
+.setting-row { display: flex; justify-content: space-between; align-items: center; gap: 8px; margin: 6px 0; }
+select { max-width: 180px; background: #16191d; color: #ddd; border: 1px solid var(--line); padding: 2px; }
+.hint { font-size: 10px; color: #a0a6ae; margin: 7px 0; }
+.button-row { display: flex; flex-wrap: wrap; gap: 4px; margin: 5px 0; }
+.file-button { position: relative; overflow: hidden; }
+.file-button input { position: absolute; inset: 0; opacity: 0; width: 100%; cursor: pointer; }
+.binding-row, .library-row { display: flex; align-items: center; justify-content: space-between; gap: 6px; padding: 4px 0; border-bottom: 1px solid #353a42; }
+.binding-row small, .library-row small { display: block; color: #949da9; font-size: 10px; }
+#settings-panel footer { color: #858c97; font-size: 9px; margin-top: 8px; }
+#settings-panel a { color: #9bbce8; }
+#diagnostics-button { display: none; }
+#settings-panel #diagnostics-button { display: inline-block; position: static !important; opacity: 1; font-size: 11px !important; }
+#touch-controls { position: fixed; inset: 0; z-index: 100; display: grid; grid-template-columns: repeat(4, 1fr); grid-template-rows: 1fr; touch-action: none; user-select: none; -webkit-user-select: none; -webkit-touch-callout: none; }
+.touch-key { position: relative; min-width: 0; min-height: 0; border: 0; border-radius: 0; padding: 0; background: transparent; touch-action: none; }
+.touch-key span { position: absolute; bottom: 12%; left: 50%; transform: translateX(-50%); font: 28px monospace; color: #ffffff20; pointer-events: none; }
+.touch-key.pressed { background: #83baff16; }
+.touch-key.pressed span { color: #ffffff88; }
+#launch-button { z-index: 180; }
+#engine-log { top: 0; }
+#feature-toast { position: fixed; bottom: 12px; left: 50%; transform: translateX(-50%); z-index: 230; max-width: 90vw; padding: 6px 9px; background: #222e; color: #ddd; font-size: 11px; pointer-events: none; }
+
+#special-button { position: fixed; top: max(6px, env(safe-area-inset-top)); right: calc(max(6px, env(safe-area-inset-right)) + 35px); z-index: 220; width: 29px; height: 26px; padding: 0; font: bold 18px monospace; opacity: .8; touch-action: manipulation; }
+#special-button[aria-expanded="true"] { opacity: 1; background: #41658b; }
+#special-controls { position: fixed; top: calc(max(6px, env(safe-area-inset-top)) + 30px); right: calc(max(6px, env(safe-area-inset-right)) + 35px); z-index: 215; display: flex; gap: 4px; max-width: calc(100vw - 48px); flex-wrap: wrap; padding: 5px; border: 1px solid #555b65; background: #22252af5; box-shadow: 0 4px 14px #0008; font: 12px ui-monospace, Consolas, monospace; }
+#special-controls button { min-height: 36px; min-width: 46px; touch-action: none; }
+#special-controls button.pressed { background: #41658b; }

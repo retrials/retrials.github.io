@@ -1,0 +1,9 @@
+return Def.ActorFrame{
+  Name= "actor_pd",
+  Def.BitmapText{
+    Name= "actor_qd",--CommandCommand becomes OnCommand. -Kid
+    OnCommand= cmd(x,SCREEN_CENTER_X;y,SCREEN_CENTER_Y-50;diffusealpha,0;zoom,4;decelerate,0.2;diffusealpha,1;zoom,2;wag;effectperiod,0.4;effectmagnitude,0,0,3;sleep,.7;accelerate,0.3;y,SCREEN_CENTER_Y + 290),
+    Font= "_eurostile blue glow",
+    Text= "Let's begin!",
+  },
+}

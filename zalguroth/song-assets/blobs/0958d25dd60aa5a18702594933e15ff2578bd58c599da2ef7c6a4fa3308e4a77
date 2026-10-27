@@ -1,0 +1,66 @@
+return Def.ActorFrame{
+  Name= "actor_kqb",
+  Def.Quad{
+    Name= "actor_lqb",
+    InitCommand= function(self)
+			
+			--b310 = 124.290s
+			--b340 = 137.770s
+			
+			mawaru_twitch_cur = 1;
+			mawaru_twitch_evnts ={
+				{299,'ShowLoad'},
+				{309,'HideLoad'},
+				{313,'ShowLoad2'},
+				{313,'OFFLINE'},
+			}
+			
+		end,
+    KillCommand= function(self)
+			--any cleanup, if necessary
+		end,
+    StartCommand= function(self)
+			
+			self:sleep(0.02);
+			self:queuecommand('Update');
+
+		end,
+    UpdateCommand= function(self)
+			
+			--SCREAMING GUMBALL
+			while mawaru_twitch_cur<=table.getn(mawaru_twitch_evnts) and GAMESTATE:GetSongBeat()>=mawaru_twitch_evnts[mawaru_twitch_cur][1] do
+				MESSAGEMAN:Broadcast(mawaru_twitch_evnts[mawaru_twitch_cur][2]);
+				mawaru_twitch_cur=mawaru_twitch_cur+1;
+			end
+			
+			self:sleep(0.02);
+			if mawaru_curgame == 6 then
+				self:queuecommand('Update');
+			end
+			
+		end,
+  },
+  Def.Quad{
+    Name= "actor_mqb",
+    InitCommand= function(self) mawaru_gamename_controller = self end,
+  },
+  Def.Sprite{
+    Name= "actor_nqb",
+    HideLoadMessageCommand= cmd(diffusealpha,0),
+    OnCommand= cmd(x,SCREEN_CENTER_X;y,SCREEN_CENTER_Y;spin;effectmagnitude,0,0,180;effectclock,"timer";diffusealpha,0),
+    ShowLoad2MessageCommand= cmd(diffusealpha,1;sleep,1;diffusealpha,0),
+    ShowLoadMessageCommand= cmd(diffusealpha,1),
+    Texture= "loading.png",
+  },
+  Def.Sprite{
+    Name= "actor_oqb",
+    OFFLINEMessageCommand= cmd(sleep,0.6;diffusealpha,1),
+    OnCommand= cmd(x,SCREEN_CENTER_X;y,SCREEN_CENTER_Y;zoomto,SCREEN_WIDTH,SCREEN_HEIGHT;diffusealpha,0),
+    Texture= "offline.png",
+  },
+  Def.Sprite{
+    Name= "actor_pqb",
+    OnCommand= cmd(x,SCREEN_CENTER_X;y,SCREEN_CENTER_Y;zoomto,SCREEN_WIDTH,SCREEN_HEIGHT),
+    Texture= "overlay.png",
+  },
+}

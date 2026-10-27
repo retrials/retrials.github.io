@@ -1,0 +1,428 @@
+<GAME Type="ActorFrame"><children>
+
+	<LAER Type="Quad"
+		InitCommand="%function(self)
+		
+			mawaru_coop_held = {0,0,0,0,0,0,0,0};
+			
+			--some vars can be set here, consts
+			--mawaru_coop_bottom = SCREEN_BOTTOM-48
+			
+			function mawaru_coop_bottom(x)
+				if not x then
+					return SCREEN_BOTTOM-48
+				else
+					if x<SCREEN_WIDTH*0.7 then
+						return SCREEN_BOTTOM-48
+					else
+						return SCREEN_HEIGHT*0.5
+					end
+				end
+			end
+			
+			mawaru_coop_left = 0+64;
+			function mawaru_coop_right(y)
+				if not y then
+					return SCREEN_RIGHT-64
+				else
+					if y<SCREEN_HEIGHT*0.6 then
+						return SCREEN_RIGHT-64
+					else
+						return (SCREEN_WIDTH*0.7)-24
+					end
+				end
+			end
+			
+			mawaru_coop_spawn = {SCREEN_LEFT+100,SCREEN_LEFT+200}
+			mawaru_coop_jumpheight = 11;
+			mawaru_coop_fallspd = 0.8;
+			
+			mawaru_coop_xaccel = 1;
+			mawaru_coop_xdecel = 1;
+			mawaru_coop_xspeed = 5;
+			
+			mawaru_coop_player = {{},{}}
+			
+			--get off my goddamn head!
+			function mawaru_coop_headcontact(pn)
+				if math.abs(mawaru_coop_player[pn].x-mawaru_coop_player[mawaru_opposite(pn)].x) < mawaru_coop_player[pn].width/2
+				and math.abs(mawaru_coop_player[pn].y-(mawaru_coop_player[mawaru_opposite(pn)].y+16-mawaru_coop_player[mawaru_opposite(pn)].height)) < 32
+				and mawaru_coop_player[pn].ymo >= 0 then
+					return true;
+				else
+					return false;
+				end
+			end
+			
+			function mawaru_coop_updateplayers()
+				for pn=1,2 do
+					
+					--update if the game isn't over
+					mawaru_coop_player[pn].x = mawaru_coop_player[pn].x+mawaru_coop_player[pn].xmo
+					mawaru_coop_player[pn].y = mawaru_coop_player[pn].y+mawaru_coop_player[pn].ymo
+					
+					--check if a player is touching the booty
+					if math.abs(mawaru_coop_player[pn].x-mawaru_coop_bill:GetX())<40
+					and math.abs((mawaru_coop_player[pn].y-52)-mawaru_coop_bill:GetY())<40 then
+						mawaru_coop_player[pn].outcome = 1;
+						
+						mawaru_curjudge = 4;
+						
+						mawaru_gamesP1[4] = 1;
+						mawaru_gfx_gradep1:setstate(1);
+						mawaru_gfx_gradep1:diffusealpha(1);
+						mawaru_gfx_gradep1:sleep(0.1);
+						mawaru_gfx_gradep1:diffusealpha(0);
+						mawaru_gfx_gradep1:sleep(0.1);
+						mawaru_gfx_gradep1:diffusealpha(1);
+						mawaru_gfx_gradep1:sleep(1.2);
+						mawaru_gfx_gradep1:diffusealpha(0);
+						
+						mawaru_gamesP2[4] = 1;
+						mawaru_gfx_gradep2:setstate(1);
+						mawaru_gfx_gradep2:diffusealpha(1);
+						mawaru_gfx_gradep2:sleep(0.1);
+						mawaru_gfx_gradep2:diffusealpha(0);
+						mawaru_gfx_gradep2:sleep(0.1);
+						mawaru_gfx_gradep2:diffusealpha(1);
+						mawaru_gfx_gradep2:sleep(1.2);
+						mawaru_gfx_gradep2:diffusealpha(0);
+						
+						mawaru_speaker:sleep(0.5);
+						mawaru_speaker:queuecommand('Talk');
+						
+						mawaru_sound('sounds/good.ogg');
+						mawaru_coop_bill:y(-10000);
+					end
+					
+					--shortcut for button handling
+					local bpn = pn-1;
+					
+					-----------------------------------------------
+					--handle gravity-------------------------------
+					-----------------------------------------------
+					if mawaru_coop_player[pn].y > mawaru_coop_bottom(mawaru_coop_player[pn].x) then
+						mawaru_coop_player[pn].y = mawaru_coop_bottom(mawaru_coop_player[pn].x);
+						mawaru_coop_player[pn].ymo = 0;
+					end
+					
+					if mawaru_coop_player[pn].y >= mawaru_coop_bottom(mawaru_coop_player[pn].x) then
+						mawaru_coop_player[pn].ground = true;
+					end
+					
+					if mawaru_coop_headcontact(pn) then
+						mawaru_coop_player[pn].y = mawaru_coop_player[mawaru_opposite(pn)].y-mawaru_coop_player[mawaru_opposite(pn)].height;
+						mawaru_coop_player[pn].ymo = 0;
+						mawaru_coop_player[pn].ground = true;
+					end
+					
+					if mawaru_coop_player[pn].y < mawaru_coop_bottom(mawaru_coop_player[pn].x) and not mawaru_coop_headcontact(pn) then
+						mawaru_coop_player[pn].ymo = mawaru_coop_player[pn].ymo+mawaru_coop_fallspd;
+						mawaru_coop_player[pn].ground = false;
+					end
+					
+					--jump
+					if mawaru_coop_player[pn].outcome == 0 then --only if the game isn't over
+						if mawaru_coop_player[pn].ground and mawaru_keys[(bpn*4)+3] == 1 and mawaru_coop_held[(bpn*4)+3] == 0 then
+							mawaru_coop_player[pn].y = mawaru_coop_player[pn].y-5
+							mawaru_coop_player[pn].ymo = mawaru_coop_jumpheight*-1;
+							if GAMESTATE:IsHumanPlayer(pn-1) then
+								--only humans need to be told not to hold buttons
+								mawaru_coop_held[(bpn*4)+3] = 1;
+							end
+						end
+						
+						if mawaru_keys[(bpn*4)+3] == 0 then
+							mawaru_coop_held[(bpn*4)+3] = 0;
+						end
+					end
+					-----------------------------------------------
+					
+					-----------------------------------------------
+					--left/right movement with accel and decel-----
+					-----------------------------------------------
+					if mawaru_keys[(bpn*4)+1] == 1 and mawaru_keys[(bpn*4)+4] == 0 and mawaru_coop_player[pn].outcome == 0 then
+						if mawaru_coop_player[pn].xmo > mawaru_coop_xspeed*-1 then
+							mawaru_coop_player[pn].xmo = mawaru_coop_player[pn].xmo-mawaru_coop_xaccel;
+						else
+							mawaru_coop_player[pn].xmo = mawaru_coop_xspeed*-1
+						end
+						mawaru_coop_player[pn].moving = true;
+						if mawaru_coop_player[pn].dir == 1 then
+							mawaru_coop_player[pn].turnactor:finishtweening();
+							mawaru_coop_player[pn].turnactor:linear(0.2);
+							mawaru_coop_player[pn].turnactor:zoomx(-1);
+							mawaru_coop_player[pn].dir = -1;
+						end
+					elseif mawaru_keys[(bpn*4)+1] == 0 and mawaru_keys[(bpn*4)+4] == 1 and mawaru_coop_player[pn].outcome == 0 then
+						if mawaru_coop_player[pn].xmo < mawaru_coop_xspeed*1 then
+							mawaru_coop_player[pn].xmo = mawaru_coop_player[pn].xmo+mawaru_coop_xaccel;
+						else
+							mawaru_coop_player[pn].xmo = mawaru_coop_xspeed*1
+						end
+						mawaru_coop_player[pn].moving = true;
+						if mawaru_coop_player[pn].dir == -1 then
+							mawaru_coop_player[pn].turnactor:finishtweening();
+							mawaru_coop_player[pn].turnactor:linear(0.2);
+							mawaru_coop_player[pn].turnactor:zoomx(1);
+							mawaru_coop_player[pn].dir = 1;
+						end
+					elseif (mawaru_keys[(bpn*4)+1] == 1 and mawaru_keys[(bpn*4)+4] == 1)
+					or (mawaru_keys[(bpn*4)+1] == 0 and mawaru_keys[(bpn*4)+4] == 0)
+					or mawaru_coop_player[pn].outcome >= 0 then
+						if mawaru_coop_player[pn].xmo > mawaru_coop_xdecel then
+							mawaru_coop_player[pn].xmo = mawaru_coop_player[pn].xmo-mawaru_coop_xaccel;
+						elseif mawaru_coop_player[pn].xmo < mawaru_coop_xdecel*-1 then
+							mawaru_coop_player[pn].xmo = mawaru_coop_player[pn].xmo+mawaru_coop_xaccel;
+						else
+							mawaru_coop_player[pn].xmo = 0;
+						end
+						mawaru_coop_player[pn].moving = false;
+					end
+					-----------------------------------------------
+					
+					-----------------------------------------------
+					--keep within stage boundaries-----------------
+					-----------------------------------------------
+					if mawaru_coop_player[pn].x>mawaru_coop_right(mawaru_coop_player[pn].y) then
+						mawaru_coop_player[pn].x = mawaru_coop_right(mawaru_coop_player[pn].y)
+						mawaru_coop_player[pn].xmo = math.abs(mawaru_coop_player[pn].xmo)*-1
+					end
+					if mawaru_coop_player[pn].x<mawaru_coop_left then
+						mawaru_coop_player[pn].x = mawaru_coop_left
+						mawaru_coop_player[pn].xmo = math.abs(mawaru_coop_player[pn].xmo)*1
+					end
+					-----------------------------------------------
+					
+					-----------------------------------------------
+					--control animation - hide and unhide stuff where appropriate
+					-----------------------------------------------
+					if mawaru_coop_player[pn].outcome == 0 then
+						if mawaru_coop_player[pn].y >= mawaru_coop_bottom(mawaru_coop_player[pn].x) or mawaru_coop_player[pn].ground then
+							mawaru_coop_player[pn].jumpactor:hidden(1);
+							if mawaru_coop_player[pn].moving then
+								mawaru_coop_player[pn].idleactor:hidden(1);
+								mawaru_coop_player[pn].runactor:hidden(0);
+							else
+								mawaru_coop_player[pn].idleactor:hidden(0);
+								mawaru_coop_player[pn].runactor:hidden(1);
+							end
+						else
+							mawaru_coop_player[pn].jumpactor:hidden(0);
+							mawaru_coop_player[pn].idleactor:hidden(1);
+							mawaru_coop_player[pn].runactor:hidden(1);
+						end
+						mawaru_coop_player[pn].winactor:hidden(1);
+						mawaru_coop_player[pn].loseactor:hidden(1);
+					else
+						mawaru_coop_player[pn].idleactor:hidden(1);
+						mawaru_coop_player[pn].runactor:hidden(1);
+						mawaru_coop_player[pn].jumpactor:hidden(1);
+						if mawaru_coop_player[pn].outcome == 1 then
+							mawaru_coop_player[pn].winactor:hidden(0);
+							mawaru_coop_player[pn].turnactor:finishtweening();
+							mawaru_coop_player[pn].turnactor:zoomx(1);
+						else
+							mawaru_coop_player[pn].loseactor:hidden(0);
+							mawaru_coop_player[pn].height = 64;
+						end
+					end
+					-----------------------------------------------
+					
+					--boring stuff
+					mawaru_coop_player[pn].actor:x(mawaru_coop_player[pn].x);
+					mawaru_coop_player[pn].actor:y(mawaru_coop_player[pn].y);
+					
+				end
+			end
+			
+		end"
+		StartCommand="%function(self)
+			
+			--variables set up when a game is started
+			
+			mawaru_coop_updatetime = {0,0}
+			mawaru_coop_jumpdelay = {math.random(10,40)/10,math.random(10,40)/10}
+			
+			for i=1,2 do
+				mawaru_coop_updatetime[i] = math.random(5,8)/2.5;
+			end
+			
+			for pn=1,2 do
+				mawaru_coop_player[pn].x = mawaru_coop_spawn[pn]
+				mawaru_coop_player[pn].y = mawaru_coop_bottom()
+				mawaru_coop_player[pn].xmo = 0;
+				mawaru_coop_player[pn].ymo = 0;
+				mawaru_coop_player[pn].width = 64;
+				mawaru_coop_player[pn].height = 96;
+				mawaru_coop_player[pn].dir = 1;
+				mawaru_coop_player[pn].turnactor:zoomx(mawaru_coop_player[pn].dir);
+				mawaru_coop_player[pn].moving = false;
+				mawaru_coop_player[pn].outcome = 0; --match outcome: 0 = undecided, 1 = win, 2 = lose
+				mawaru_coop_player[pn].actor:hidden(0); --container
+				mawaru_coop_player[pn].idleactor:hidden(0);
+				mawaru_coop_player[pn].idleactor:pulse();
+				mawaru_coop_player[pn].idleactor:effectmagnitude(1,1.03,1);
+				mawaru_coop_player[pn].idleactor:effectperiod(0.6+(math.random(0,10)*0.05));
+				mawaru_coop_player[pn].jumpactor:hidden(1);
+				mawaru_coop_player[pn].runactor:hidden(1);
+				mawaru_coop_player[pn].winactor:hidden(1);
+				mawaru_coop_player[pn].winactor:pulse();
+				mawaru_coop_player[pn].winactor:effectmagnitude(1.03,1,1);
+				mawaru_coop_player[pn].loseactor:hidden(1);
+			end
+			
+			mawaru_coop_bill_xspeed = 0;
+			mawaru_coop_bill_maxspeed = 2;
+			mawaru_coop_bill_accel = 0.02; --the bill drifts slowly along the x axis
+			mawaru_coop_bill_xpos = SCREEN_CENTER_X;
+			
+			--place the money
+			mawaru_coop_bill:hidden(0);
+			mawaru_coop_bill:x(SCREEN_WIDTH*0.8)
+			mawaru_coop_bill:y(SCREEN_HEIGHT*0.4);
+			mawaru_coop_bill:effectmagnitude(30,-20,10);
+			--mawaru_coop_bill:spin();
+			--mawaru_coop_bill:effectmagnitude(math.random(10,180),math.random(10,180),math.random(10,180));
+			
+			self:sleep(0.02);
+			self:queuecommand('Update');
+			
+		end"
+		UpdateCommand="%function(self)
+			
+			--game logic
+			
+			mawaru_coop_updateplayers();
+			
+			-----------------------------------------------
+			--cpu ai logic---------------------------------
+			-----------------------------------------------
+			
+			for pn=1,2 do
+				
+				local bpn = pn-1;
+			
+				mawaru_coop_updatetime[pn] = mawaru_coop_updatetime[pn]-0.02
+			
+				local p = mawaru_coop_player[pn];
+				local p2 = mawaru_coop_player[mawaru_opposite(pn)];
+				
+				if p.ground then
+					mawaru_coop_jumpdelay[pn] = mawaru_coop_jumpdelay[pn]-0.02
+				end
+				
+				if not GAMESTATE:IsHumanPlayer(pn-1) then
+					if mawaru_coop_jumpdelay[pn] < 0 or (p.y < mawaru_coop_bottom(mawaru_coop_player[pn].x) and p.ground and mawaru_cpulevel==1) then
+						if math.abs(p.x-p2.x) < p.width/2 then
+							mawaru_keys[(bpn*4)+3] = 1;
+						else
+							mawaru_keys[(bpn*4)+3] = 0;
+						end
+						if mawaru_cpulevel == 1 then
+							mawaru_coop_jumpdelay[pn] = math.random(10,40)/100
+						else
+							mawaru_coop_jumpdelay[pn] = math.random(10,40)/80
+						end
+					else
+						mawaru_keys[(bpn*4)+3] = 0;
+					end
+					
+					if mawaru_gamesP1[4] == 1 or mawaru_gamesP2[4] == 1 then
+						mawaru_keys[(bpn*4)+1] = 0;
+						mawaru_keys[(bpn*4)+2] = 0;
+						mawaru_keys[(bpn*4)+3] = 0;
+						mawaru_keys[(bpn*4)+4] = 0;
+					end
+					
+				end
+				
+				if mawaru_coop_updatetime[pn] < 0 and mawaru_gamesP1[4] == 0 and mawaru_gamesP2[4] == 0 then
+					if not GAMESTATE:IsHumanPlayer(pn-1) then
+						if mawaru_cpulevel == 1 then
+							mawaru_coop_updatetime[pn] = math.random(5,15)/25;
+							if mawaru_coop_bill:GetX() < p.x then
+								mawaru_keys[(bpn*4)+1] = 1;
+								mawaru_keys[(bpn*4)+4] = 0;
+							elseif mawaru_coop_bill:GetX() > p.x then
+								mawaru_keys[(bpn*4)+4] = 1;
+								mawaru_keys[(bpn*4)+1] = 0;
+							end
+						else
+							mawaru_coop_updatetime[pn] = math.random(5,15)/15;
+							if mawaru_coop_bill:GetX() < p.x-40 then
+								mawaru_keys[(bpn*4)+1] = 1;
+								mawaru_keys[(bpn*4)+4] = 0;
+							elseif mawaru_coop_bill:GetX() > p.x+40 then
+								mawaru_keys[(bpn*4)+4] = 1;
+								mawaru_keys[(bpn*4)+1] = 0;
+							else
+								mawaru_keys[(bpn*4)+4] = 0;
+								mawaru_keys[(bpn*4)+1] = 0;
+							end
+						end
+					end
+				end
+				
+			end
+			
+			self:sleep(0.02);
+			if mawaru_curgame == 9 and GAMESTATE:GetSongBeat()<426 then
+				self:queuecommand('Update');
+			end
+		end"
+		KillCommand="%function(self)
+			--any cleanup, if necessary
+		end"
+	/>
+	
+	<!--game actors-->
+	
+	<LAER File="bg" OnCommand="x,SCREEN_CENTER_X;y,SCREEN_CENTER_Y;zoomto,SCREEN_WIDTH,SCREEN_HEIGHT;" />
+	
+	<LAER Type="ActorFrame"><children>
+		<LAER Type="ActorFrame" OnCommand="hidden,1;zoom,0.5;sleep,0.1;queuecommand,SetMe"
+		SetMeCommand="%function (self) mawaru_coop_player[2].actor = self end" ><children>
+			<LAER Type="ActorFrame" OnCommand="zoomx,-1;sleep,0.1;queuecommand,SetMe"
+			SetMeCommand="%function (self) mawaru_coop_player[2].turnactor = self end" ><children>
+		
+				<LAER File="dude" OnCommand="vertalign,bottom;hidden,1;diffuse,.6,.6,1,1;sleep,0.1;animate,0;setstate,0;queuecommand,SetMe"
+	SetMeCommand="%function (self) if not GAMESTATE:IsHumanPlayer(1) then self:diffuse(.6,.6,.6,1) end mawaru_coop_player[2].idleactor = self end" />
+				<LAER File="run" OnCommand="vertalign,bottom;hidden,1;diffuse,.6,.6,1,1;sleep,0.1;queuecommand,SetMe"
+	SetMeCommand="%function (self) if not GAMESTATE:IsHumanPlayer(1) then self:diffuse(.6,.6,.6,1) end mawaru_coop_player[2].runactor = self end" />
+				<LAER File="dude" OnCommand="vertalign,bottom;hidden,1;diffuse,.6,.6,1,1;sleep,0.1;animate,0;setstate,3;queuecommand,SetMe"
+	SetMeCommand="%function (self) if not GAMESTATE:IsHumanPlayer(1) then self:diffuse(.6,.6,.6,1) end mawaru_coop_player[2].jumpactor = self end" />
+				<LAER File="dude" OnCommand="vertalign,bottom;hidden,1;diffuse,.6,.6,1,1;sleep,0.1;animate,0;setstate,4;queuecommand,SetMe"
+	SetMeCommand="%function (self) if not GAMESTATE:IsHumanPlayer(1) then self:diffuse(.6,.6,.6,1) end mawaru_coop_player[2].winactor = self end" />
+				<LAER File="lose" OnCommand="vertalign,bottom;hidden,1;diffuse,.6,.6,1,1;sleep,0.1;queuecommand,SetMe"
+	SetMeCommand="%function (self) if not GAMESTATE:IsHumanPlayer(1) then self:diffuse(.6,.6,.6,1) end mawaru_coop_player[2].loseactor = self end" />
+			
+			</children></LAER>
+		</children></LAER>
+	</children></LAER>
+	
+	<LAER Type="ActorFrame"><children>
+		<LAER Type="ActorFrame" OnCommand="hidden,1;zoom,0.5;sleep,0.1;queuecommand,SetMe"
+		SetMeCommand="%function (self) mawaru_coop_player[1].actor = self end" ><children>
+			<LAER Type="ActorFrame" OnCommand="zoomx,1;sleep,0.1;queuecommand,SetMe"
+			SetMeCommand="%function (self) mawaru_coop_player[1].turnactor = self end" ><children>
+		
+				<LAER File="dude" OnCommand="vertalign,bottom;hidden,1;diffuse,1,.6,.6,1;sleep,0.1;animate,0;setstate,0;queuecommand,SetMe"
+	SetMeCommand="%function (self) if not GAMESTATE:IsHumanPlayer(0) then self:diffuse(.6,.6,.6,1) end mawaru_coop_player[1].idleactor = self end" />
+				<LAER File="run" OnCommand="vertalign,bottom;hidden,1;diffuse,1,.6,.6,1;sleep,0.1;queuecommand,SetMe"
+	SetMeCommand="%function (self) if not GAMESTATE:IsHumanPlayer(0) then self:diffuse(.6,.6,.6,1) end mawaru_coop_player[1].runactor = self end" />
+				<LAER File="dude" OnCommand="vertalign,bottom;hidden,1;diffuse,1,.6,.6,1;sleep,0.1;animate,0;setstate,3;queuecommand,SetMe"
+	SetMeCommand="%function (self) if not GAMESTATE:IsHumanPlayer(0) then self:diffuse(.6,.6,.6,1) end mawaru_coop_player[1].jumpactor = self end" />
+				<LAER File="dude" OnCommand="vertalign,bottom;hidden,1;diffuse,1,.6,.6,1;sleep,0.1;animate,0;setstate,4;queuecommand,SetMe"
+	SetMeCommand="%function (self) if not GAMESTATE:IsHumanPlayer(0) then self:diffuse(.6,.6,.6,1) end mawaru_coop_player[1].winactor = self end" />
+				<LAER File="lose" OnCommand="vertalign,bottom;hidden,1;diffuse,1,.6,.6,1;sleep,0.1;queuecommand,SetMe"
+	SetMeCommand="%function (self) if not GAMESTATE:IsHumanPlayer(0) then self:diffuse(.6,.6,.6,1) end mawaru_coop_player[1].loseactor = self end" />
+			
+			</children></LAER>
+		</children></LAER>
+	</children></LAER>
+	
+	<LAER File="coin.sprite" OnCommand="hidden,1;zoom,2;sleep,0.1;queuecommand,SetMe"
+	SetMeCommand="%function(self) mawaru_coop_bill = self end" />
+
+</children></GAME>

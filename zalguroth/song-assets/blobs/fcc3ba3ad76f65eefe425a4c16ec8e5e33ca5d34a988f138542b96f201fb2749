@@ -1,0 +1,507 @@
+<GAME Type="ActorFrame"><children>
+
+	<LAER Type="Quad"
+		InitCommand="%function(self)
+		
+			mawaru_ryuko_held = {0,0,0,0,0,0,0,0};
+			
+			mawaru_ryuko_ptr = 1;
+			
+			mawaru_ryuko_border = 2;
+			
+			function mawaru_ryuko_move(pn, dir)
+				local pos = mawaru_ryuko_players[pn].pos;
+				if (dir == -1 and pos > 1 or dir == 1 and pos < 4) and GAMESTATE:GetSongBeat() > 162 then
+					mawaru_ryuko_players[pn].pos = mawaru_ryuko_players[pn].pos+dir;
+					local a = mawaru_ryuko_players[pn].actor;
+					local pos = mawaru_ryuko_players[pn].pos;
+					mawaru_sound('sounds/select.ogg');
+					a:stoptweening();
+					a:decelerate(0.2);
+					a:x((SCREEN_CENTER_X*(pn-1))+SCREEN_CENTER_X*(0.2*pos));
+					
+					if mawaru_ryuko_moved[pn] == 0 then
+						MESSAGEMAN:Broadcast('RyukoNoArrowP'..pn);
+						mawaru_ryuko_moved[pn] = 1;
+					end
+					
+				end
+			end
+			
+			function mawaru_ryuko_getpiece()
+				local d = mawaru_ryuko_ptr;
+				
+				if mawaru_ryuko_ptr > table.getn(mawaru_ryuko_pieces) then
+					mawaru_ryuko_ptr = 1;
+				else
+					mawaru_ryuko_ptr = mawaru_ryuko_ptr+1;
+				end
+				
+				return mawaru_ryuko_pieces[d]
+			end
+			
+			mawaru_ryuko_players = {}
+			mawaru_ryuko_prize = {}
+			mawaru_ryuko_pieces = {}
+			mawaru_ryuko_bombs = {}
+			
+			--mawaru_ryuko_num_beams = {2,2,3,4,7,10};
+			--mawaru_ryuko_num_beams = {2,3,4,5,8,11};
+			mawaru_ryuko_num_beams = {2,3,4,5,8,2};
+			
+			mawaru_ryuko_beam_seed = {1,2,3,1,2,3,1,2,3,1,2,3};
+			
+			function mawaru_ryuko_simulate(pos,t)
+				for i=1,table.getn(t) do
+					if pos == t[i] then
+						pos = pos+1;
+					elseif pos == t[i]+1 then
+						pos = pos-1;
+					end
+				end
+				return pos;
+			end
+			
+			function mawaru_ryuko_makepath(pos,t,obj,pn)
+				obj:linear(1.2/table.getn(t));
+				obj:addy(((table.getn(t)-4)*(3*(SCREEN_HEIGHT/480)))+((SCREEN_HEIGHT*0.6)/table.getn(t)));
+				for i=1,table.getn(t) do
+					if pos == t[i] then
+						obj:linear(0.3);
+						obj:addx(SCREEN_WIDTH*0.1);
+						pos = pos+1;
+					elseif pos == t[i]+1 then
+						obj:linear(0.3);
+						obj:addx(SCREEN_WIDTH*-0.1);
+						pos = pos-1;
+					end
+					obj:linear(1.2/table.getn(t));
+					obj:addy(SCREEN_HEIGHT*0.35/table.getn(t));
+				end
+				obj:linear(0.3)
+				obj:addy(SCREEN_HEIGHT*0.1);
+				obj:queuemessage('RyukoCheckP'..pn);
+			end
+			
+		end"
+		StartCommand="%function(self)
+			
+			mawaru_ryuko_maps = {{},{}};
+			
+			mawaru_ryuko_beam_rng = {{},{}}
+			
+			mawaru_ryuko_solutions = {0,0}
+			
+			mawaru_ryuko_moved = {0,0};
+			
+			for pn=1,2 do
+				for i=1,mawaru_ryuko_num_beams[_G['mawaru_difficultyP'..pn]+1] do
+					table.insert(mawaru_ryuko_beam_rng[pn],mawaru_ryuko_beam_seed[i])
+				end
+				mawaru_shuffle(mawaru_ryuko_beam_rng[pn])
+			end
+			
+			--generate the board--
+			for pn=0,1 do
+				for i=1,4 do
+					table.insert(mawaru_ryuko_maps[pn+1],{SCREEN_CENTER_X*(0.2*i),SCREEN_CENTER_Y+SCREEN_HEIGHT*0.1,6,SCREEN_HEIGHT*0.5});
+				end
+				for i=1,table.getn(mawaru_ryuko_beam_rng[pn+1]) do
+					table.insert(mawaru_ryuko_maps[pn+1],
+						{SCREEN_WIDTH*0.05+(mawaru_ryuko_beam_rng[pn+1][i]*SCREEN_WIDTH*0.1),
+						SCREEN_HEIGHT*0.6-(SCREEN_HEIGHT*0.2)+((i*SCREEN_HEIGHT*0.35)/table.getn(mawaru_ryuko_beam_rng[pn+1])),SCREEN_WIDTH*0.1,6});
+				end
+			end
+			
+			--calculate solution
+			for pn=1,2 do
+				mawaru_ryuko_solutions[pn] = mawaru_ryuko_simulate(2,mawaru_ryuko_beam_rng[pn])
+				while mawaru_ryuko_solutions[pn] == mawaru_ryuko_simulate(2,mawaru_ryuko_beam_rng[pn]) do
+					mawaru_ryuko_solutions[pn] = mawaru_ryuko_simulate(math.random(1,4),mawaru_ryuko_beam_rng[pn])
+				end
+			end
+			
+			--draw the board--
+			for pn=0,1 do
+				--outline
+				for i=1,table.getn(mawaru_ryuko_maps[pn+1]) do
+					local a = mawaru_ryuko_getpiece();
+					a:hidden(0);
+					a:diffuse(0,0,0,1);
+					a:x(mawaru_ryuko_maps[pn+1][i][1]+(SCREEN_CENTER_X*pn));
+					a:y(mawaru_ryuko_maps[pn+1][i][2]);
+					a:zoomto(mawaru_ryuko_maps[pn+1][i][3]+mawaru_ryuko_border*2,mawaru_ryuko_maps[pn+1][i][4]+mawaru_ryuko_border*2);
+				end
+				--real thing
+				for i=1,table.getn(mawaru_ryuko_maps[pn+1]) do
+					local a = mawaru_ryuko_getpiece();
+					a:hidden(0);
+					a:diffuse(1,1,1,1);
+					a:x(mawaru_ryuko_maps[pn+1][i][1]+(SCREEN_CENTER_X*pn));
+					a:y(mawaru_ryuko_maps[pn+1][i][2]);
+					a:zoomto(mawaru_ryuko_maps[pn+1][i][3],mawaru_ryuko_maps[pn+1][i][4]);
+				end
+			end
+			
+			--place actors
+			for pn=0,1 do
+				local a = mawaru_ryuko_players[pn+1].actor;
+				a:hidden(0);
+				a:x((SCREEN_CENTER_X*pn)+SCREEN_CENTER_X*0.4);
+				a:y(math.floor(SCREEN_HEIGHT*0.23));
+				a:zoom(0.7);
+			end
+			
+			for pn=0,1 do
+				local a = mawaru_ryuko_prize[pn+1].actor;
+				a:x((SCREEN_CENTER_X*pn)+SCREEN_CENTER_X*(0.2*mawaru_ryuko_solutions[pn+1]));
+				a:y(math.floor(SCREEN_HEIGHT*0.9));
+				a:zoom(0.6);
+			end
+			
+			for pn=0,1 do
+				for i=1,4 do
+					local a = mawaru_ryuko_bombs[i+(4*pn)].actor;
+					a:hidden(1);
+					if mawaru_ryuko_solutions[pn+1] ~= i then
+						a:hidden(0);
+						a:cropleft(0.03);
+						a:x((SCREEN_CENTER_X*pn)+SCREEN_CENTER_X*(0.2*i));
+						a:y(math.floor(SCREEN_HEIGHT*0.87));
+						a:zoom(0.8);
+					end
+				end
+			end
+			
+			mawaru_ryuko_went = false;
+			mawaru_ryuko_judged = false;
+			mawaru_ryuko_countdowned = false;
+			
+			self:sleep(0.02);
+			self:queuecommand('Update');
+
+		end"
+		UpdateCommand="%function(self)
+			
+			--game logic
+			
+			if not mawaru_ryuko_countdowned and GAMESTATE:GetSongBeat()>172 then
+				MESSAGEMAN:Broadcast('RyukoCountdown');
+				mawaru_ryuko_countdowned = true;
+			end
+			
+			if not mawaru_ryuko_went and GAMESTATE:GetSongBeat() > 180 then
+				for pn=1,2 do
+					if GAMESTATE:IsHumanPlayer(pn-1) then
+						mawaru_ryuko_makepath(mawaru_ryuko_players[pn].pos, mawaru_ryuko_beam_rng[pn], mawaru_ryuko_players[pn].actor,pn);
+						mawaru_ryuko_players[pn].pos = mawaru_ryuko_simulate(mawaru_ryuko_players[pn].pos, mawaru_ryuko_beam_rng[pn]);
+						
+						if mawaru_ryuko_moved[pn] == 0 then
+							MESSAGEMAN:Broadcast('RyukoNoArrowP'..pn);
+							mawaru_ryuko_moved[pn] = 1;
+						end
+					end
+				end
+				
+				mawaru_ryuko_went = true;				
+			end
+			
+			if not mawaru_ryuko_judged and GAMESTATE:GetSongBeat()>192 then
+				for pn=1,2 do
+					if GAMESTATE:IsHumanPlayer(pn-1) then
+						if mawaru_ryuko_players[pn].pos == mawaru_ryuko_solutions[pn] then
+							_G['mawaru_gamesP'..pn][2] = 1;
+						end
+					end
+				end
+					
+				MESSAGEMAN:Broadcast('Judge2');
+				mawaru_ryuko_judged = true;
+			end
+			
+			for pn=1,2 do
+			
+				local bpn = pn-1;
+				for i=1,4 do
+					
+					----------------------handle button presses-------------------
+					if GAMESTATE:GetSongBeat() < 180 then
+						if mawaru_keys[i+(bpn*4)] == 1 and mawaru_ryuko_held[i+(bpn*4)] == 0 then
+							if i==1 then
+								mawaru_ryuko_move(pn,-1)
+								mawaru_ryuko_held[i+(bpn*4)] = 1
+							end
+							if i==4 then
+								mawaru_ryuko_move(pn,1)
+								mawaru_ryuko_held[i+(bpn*4)] = 1
+							end
+						end
+						
+					end
+					
+					
+					
+					
+					
+					----------------------don't touch this------------------------
+					--release all buttons - used for detecting if a button is newly pressed, as opposed to held
+					if mawaru_keys[i+(bpn*4)] == 0 then
+						mawaru_ryuko_held[i+(bpn*4)] = 0
+					end
+					---------------------end don't touch this----------------------
+					
+				end
+			end
+			
+			self:sleep(0.02);
+			if mawaru_curgame == 3 then
+				self:queuecommand('Update');
+			end
+			
+		end"
+		KillCommand="%function(self)
+			--any cleanup, if necessary
+		end"
+	/>
+	
+	<LAER Type="Quad"
+	RyukoCheckP1MessageCommand="%function(self)
+		local pn = 1;
+		if mawaru_ryuko_players[pn].pos == mawaru_ryuko_solutions[pn] then
+			--TODO: SoundHere?
+		else
+			mawaru_ryuko_bombs[mawaru_ryuko_players[pn].pos].actor:hidden(1);
+			--mawaru_ryuko_players[pn].actor:hidden(1);
+			mawaru_ryuko_players[pn].child:stoptweening();
+			mawaru_ryuko_players[pn].child:diffuse(0,0,0,1);
+			MESSAGEMAN:Broadcast('RyukoExplodeP'..pn);
+		end
+	end"
+	/>
+	<LAER Type="Quad"
+	RyukoCheckP2MessageCommand="%function(self)
+		local pn = 2;
+		if mawaru_ryuko_players[pn].pos == mawaru_ryuko_solutions[pn] then
+			--TODO: SoundHere?
+		else
+			mawaru_ryuko_bombs[mawaru_ryuko_players[pn].pos+(4*(pn-1))].actor:hidden(1);
+			--mawaru_ryuko_players[pn].actor:hidden(1);
+			mawaru_ryuko_players[pn].child:stoptweening();
+			mawaru_ryuko_players[pn].child:diffuse(0,0,0,1);
+			MESSAGEMAN:Broadcast('RyukoExplodeP'..pn);
+		end
+	end"
+	/>
+	
+	<LAER Type="ActorFrame"><children>
+		<LAER File="bg"
+		OnCommand="x,SCREEN_CENTER_X;y,SCREEN_CENTER_Y;" />
+		
+		<LAER
+			File="smoke"
+			OnCommand="x,SCREEN_CENTER_X;y,SCREEN_CENTER_Y;
+			ZoomToWidth,1024;ZoomToHeight,1024;spin;effectmagnitude,0,0,10;
+			customtexturerect,0,0,4,4;texcoordvelocity,1,0.6;diffuse,#AAAAAA66;"
+		/>
+		<LAER
+			File="smoke"
+			OnCommand="x,SCREEN_CENTER_X+80;y,SCREEN_CENTER_Y+40;
+			ZoomToWidth,1024;ZoomToHeight,1024;spin;effectmagnitude,0,0,-13;
+			customtexturerect,0,0,4,4;texcoordvelocity,-0.9,-0.4;diffuse,#AAAAAA66;"
+		/>
+		
+		<LAER Type="ActorFrame" OnCommand="x,SCREEN_WIDTH*0.2;y,SCREEN_HEIGHT*0.2;rotationz,20;
+		wag;effectmagnitude,0,0,math.random(70,150)/10;effectperiod,math.random(50,200)/10;effectoffset,math.random(25,100)/10">
+		<children> <Layer File="fiber" OnCommand="zoomtoheight,1500;blend,add;diffusealpha,0.4;"/> </children></LAER>
+		<LAER Type="ActorFrame" OnCommand="x,SCREEN_WIDTH*0.4;y,SCREEN_HEIGHT*0.6;rotationz,45;
+		wag;effectmagnitude,0,0,math.random(70,150)/10;effectperiod,math.random(50,200)/10;effectoffset,math.random(25,100)/10">
+		<children> <Layer File="fiber" OnCommand="zoomtoheight,1500;blend,add;diffusealpha,0.4;"/> </children></LAER>
+		<LAER Type="ActorFrame" OnCommand="x,SCREEN_WIDTH*0.8;y,SCREEN_HEIGHT*0.7;rotationz,110;
+		wag;effectmagnitude,0,0,math.random(70,150)/10;effectperiod,math.random(50,200)/10;effectoffset,math.random(25,100)/10">
+		<children> <Layer File="fiber" OnCommand="zoomtoheight,1500;blend,add;diffusealpha,0.4;"/> </children></LAER>
+		<LAER Type="ActorFrame" OnCommand="x,SCREEN_WIDTH*0.3;y,SCREEN_HEIGHT*0.5;rotationz,-45;
+		wag;effectmagnitude,0,0,math.random(70,150)/10;effectperiod,math.random(50,200)/10;effectoffset,math.random(25,100)/10">
+		<children> <Layer File="fiber" OnCommand="zoomtoheight,1500;blend,add;diffusealpha,0.4;"/> </children></LAER>
+		<LAER Type="ActorFrame" OnCommand="x,SCREEN_WIDTH*0.6;y,SCREEN_HEIGHT*0.1;rotationz,120;
+		wag;effectmagnitude,0,0,math.random(70,150)/10;effectperiod,math.random(50,200)/10;effectoffset,math.random(25,100)/10">
+		<children> <Layer File="fiber" OnCommand="zoomtoheight,1500;blend,add;diffusealpha,0.4;"/> </children></LAER>
+		
+	</children></LAER>
+	
+	<LAER Type="Quad" OnCommand="hidden,1;sleep,0.02;queuecommand,SetMe" SetMeCommand="%function(self) table.insert(mawaru_ryuko_pieces,self) end"/>
+	<LAER Type="Quad" OnCommand="hidden,1;sleep,0.02;queuecommand,SetMe" SetMeCommand="%function(self) table.insert(mawaru_ryuko_pieces,self) end"/>
+	<LAER Type="Quad" OnCommand="hidden,1;sleep,0.02;queuecommand,SetMe" SetMeCommand="%function(self) table.insert(mawaru_ryuko_pieces,self) end"/>
+	<LAER Type="Quad" OnCommand="hidden,1;sleep,0.02;queuecommand,SetMe" SetMeCommand="%function(self) table.insert(mawaru_ryuko_pieces,self) end"/>
+	<LAER Type="Quad" OnCommand="hidden,1;sleep,0.02;queuecommand,SetMe" SetMeCommand="%function(self) table.insert(mawaru_ryuko_pieces,self) end"/>
+	<LAER Type="Quad" OnCommand="hidden,1;sleep,0.02;queuecommand,SetMe" SetMeCommand="%function(self) table.insert(mawaru_ryuko_pieces,self) end"/>
+	<LAER Type="Quad" OnCommand="hidden,1;sleep,0.02;queuecommand,SetMe" SetMeCommand="%function(self) table.insert(mawaru_ryuko_pieces,self) end"/>
+	<LAER Type="Quad" OnCommand="hidden,1;sleep,0.02;queuecommand,SetMe" SetMeCommand="%function(self) table.insert(mawaru_ryuko_pieces,self) end"/>
+	<LAER Type="Quad" OnCommand="hidden,1;sleep,0.02;queuecommand,SetMe" SetMeCommand="%function(self) table.insert(mawaru_ryuko_pieces,self) end"/>
+	<LAER Type="Quad" OnCommand="hidden,1;sleep,0.02;queuecommand,SetMe" SetMeCommand="%function(self) table.insert(mawaru_ryuko_pieces,self) end"/>
+	<LAER Type="Quad" OnCommand="hidden,1;sleep,0.02;queuecommand,SetMe" SetMeCommand="%function(self) table.insert(mawaru_ryuko_pieces,self) end"/>
+	<LAER Type="Quad" OnCommand="hidden,1;sleep,0.02;queuecommand,SetMe" SetMeCommand="%function(self) table.insert(mawaru_ryuko_pieces,self) end"/>
+	<LAER Type="Quad" OnCommand="hidden,1;sleep,0.02;queuecommand,SetMe" SetMeCommand="%function(self) table.insert(mawaru_ryuko_pieces,self) end"/>
+	<LAER Type="Quad" OnCommand="hidden,1;sleep,0.02;queuecommand,SetMe" SetMeCommand="%function(self) table.insert(mawaru_ryuko_pieces,self) end"/>
+	<LAER Type="Quad" OnCommand="hidden,1;sleep,0.02;queuecommand,SetMe" SetMeCommand="%function(self) table.insert(mawaru_ryuko_pieces,self) end"/>
+	<LAER Type="Quad" OnCommand="hidden,1;sleep,0.02;queuecommand,SetMe" SetMeCommand="%function(self) table.insert(mawaru_ryuko_pieces,self) end"/>
+	<LAER Type="Quad" OnCommand="hidden,1;sleep,0.02;queuecommand,SetMe" SetMeCommand="%function(self) table.insert(mawaru_ryuko_pieces,self) end"/>
+	<LAER Type="Quad" OnCommand="hidden,1;sleep,0.02;queuecommand,SetMe" SetMeCommand="%function(self) table.insert(mawaru_ryuko_pieces,self) end"/>
+	<LAER Type="Quad" OnCommand="hidden,1;sleep,0.02;queuecommand,SetMe" SetMeCommand="%function(self) table.insert(mawaru_ryuko_pieces,self) end"/>
+	<LAER Type="Quad" OnCommand="hidden,1;sleep,0.02;queuecommand,SetMe" SetMeCommand="%function(self) table.insert(mawaru_ryuko_pieces,self) end"/>
+	<LAER Type="Quad" OnCommand="hidden,1;sleep,0.02;queuecommand,SetMe" SetMeCommand="%function(self) table.insert(mawaru_ryuko_pieces,self) end"/>
+	<LAER Type="Quad" OnCommand="hidden,1;sleep,0.02;queuecommand,SetMe" SetMeCommand="%function(self) table.insert(mawaru_ryuko_pieces,self) end"/>
+	<LAER Type="Quad" OnCommand="hidden,1;sleep,0.02;queuecommand,SetMe" SetMeCommand="%function(self) table.insert(mawaru_ryuko_pieces,self) end"/>
+	<LAER Type="Quad" OnCommand="hidden,1;sleep,0.02;queuecommand,SetMe" SetMeCommand="%function(self) table.insert(mawaru_ryuko_pieces,self) end"/>
+	<LAER Type="Quad" OnCommand="hidden,1;sleep,0.02;queuecommand,SetMe" SetMeCommand="%function(self) table.insert(mawaru_ryuko_pieces,self) end"/>
+	<LAER Type="Quad" OnCommand="hidden,1;sleep,0.02;queuecommand,SetMe" SetMeCommand="%function(self) table.insert(mawaru_ryuko_pieces,self) end"/>
+	<LAER Type="Quad" OnCommand="hidden,1;sleep,0.02;queuecommand,SetMe" SetMeCommand="%function(self) table.insert(mawaru_ryuko_pieces,self) end"/>
+	<LAER Type="Quad" OnCommand="hidden,1;sleep,0.02;queuecommand,SetMe" SetMeCommand="%function(self) table.insert(mawaru_ryuko_pieces,self) end"/>
+	<LAER Type="Quad" OnCommand="hidden,1;sleep,0.02;queuecommand,SetMe" SetMeCommand="%function(self) table.insert(mawaru_ryuko_pieces,self) end"/>
+	<LAER Type="Quad" OnCommand="hidden,1;sleep,0.02;queuecommand,SetMe" SetMeCommand="%function(self) table.insert(mawaru_ryuko_pieces,self) end"/>
+	<LAER Type="Quad" OnCommand="hidden,1;sleep,0.02;queuecommand,SetMe" SetMeCommand="%function(self) table.insert(mawaru_ryuko_pieces,self) end"/>
+	<LAER Type="Quad" OnCommand="hidden,1;sleep,0.02;queuecommand,SetMe" SetMeCommand="%function(self) table.insert(mawaru_ryuko_pieces,self) end"/>
+	<LAER Type="Quad" OnCommand="hidden,1;sleep,0.02;queuecommand,SetMe" SetMeCommand="%function(self) table.insert(mawaru_ryuko_pieces,self) end"/>
+	<LAER Type="Quad" OnCommand="hidden,1;sleep,0.02;queuecommand,SetMe" SetMeCommand="%function(self) table.insert(mawaru_ryuko_pieces,self) end"/>
+	<LAER Type="Quad" OnCommand="hidden,1;sleep,0.02;queuecommand,SetMe" SetMeCommand="%function(self) table.insert(mawaru_ryuko_pieces,self) end"/>
+	<LAER Type="Quad" OnCommand="hidden,1;sleep,0.02;queuecommand,SetMe" SetMeCommand="%function(self) table.insert(mawaru_ryuko_pieces,self) end"/>
+	<LAER Type="Quad" OnCommand="hidden,1;sleep,0.02;queuecommand,SetMe" SetMeCommand="%function(self) table.insert(mawaru_ryuko_pieces,self) end"/>
+	<LAER Type="Quad" OnCommand="hidden,1;sleep,0.02;queuecommand,SetMe" SetMeCommand="%function(self) table.insert(mawaru_ryuko_pieces,self) end"/>
+	<LAER Type="Quad" OnCommand="hidden,1;sleep,0.02;queuecommand,SetMe" SetMeCommand="%function(self) table.insert(mawaru_ryuko_pieces,self) end"/>
+	<LAER Type="Quad" OnCommand="hidden,1;sleep,0.02;queuecommand,SetMe" SetMeCommand="%function(self) table.insert(mawaru_ryuko_pieces,self) end"/>
+	<LAER Type="Quad" OnCommand="hidden,1;sleep,0.02;queuecommand,SetMe" SetMeCommand="%function(self) table.insert(mawaru_ryuko_pieces,self) end"/>
+	<LAER Type="Quad" OnCommand="hidden,1;sleep,0.02;queuecommand,SetMe" SetMeCommand="%function(self) table.insert(mawaru_ryuko_pieces,self) end"/>
+	<LAER Type="Quad" OnCommand="hidden,1;sleep,0.02;queuecommand,SetMe" SetMeCommand="%function(self) table.insert(mawaru_ryuko_pieces,self) end"/>
+	<LAER Type="Quad" OnCommand="hidden,1;sleep,0.02;queuecommand,SetMe" SetMeCommand="%function(self) table.insert(mawaru_ryuko_pieces,self) end"/>
+	<LAER Type="Quad" OnCommand="hidden,1;sleep,0.02;queuecommand,SetMe" SetMeCommand="%function(self) table.insert(mawaru_ryuko_pieces,self) end"/>
+	<LAER Type="Quad" OnCommand="hidden,1;sleep,0.02;queuecommand,SetMe" SetMeCommand="%function(self) table.insert(mawaru_ryuko_pieces,self) end"/>
+	<LAER Type="Quad" OnCommand="hidden,1;sleep,0.02;queuecommand,SetMe" SetMeCommand="%function(self) table.insert(mawaru_ryuko_pieces,self) end"/>
+	<LAER Type="Quad" OnCommand="hidden,1;sleep,0.02;queuecommand,SetMe" SetMeCommand="%function(self) table.insert(mawaru_ryuko_pieces,self) end"/>
+	
+	<LAER Type="ActorFrame" OnCommand="sleep,0.02;queuecommand,SetMe"
+		SetMeCommand="%function(self)
+			mawaru_ryuko_players[1] = {actor = self,child = self:GetChild(''), pn = 1,pos = 2}
+		end">
+		<children>
+		<LAER File="char 2x1" OnCommand="setstate,0;animate,0;rotationz,4;sleep,0.3;queuecommand,Rotate2;"
+		Rotate2Command="rotationz,-4;sleep,0.3;queuecommand,On;" />
+		<LAER File="dir" OnCommand="rotationz,90;" RyukoNoArrowP1MessageCommand="linear,0.3;diffusealpha,0"/>
+	</children></LAER>
+	
+	<LAER Type="ActorFrame" OnCommand="sleep,0.02;queuecommand,SetMe"
+		SetMeCommand="%function(self)
+			mawaru_ryuko_players[2] = {actor = self,child = self:GetChild(''), pn = 2,pos = 2}
+		end">
+		<children>
+		<LAER File="char 2x1" OnCommand="setstate,1;animate,0;rotationz,4;sleep,0.3;queuecommand,Rotate2;"
+		Rotate2Command="rotationz,-4;sleep,0.3;queuecommand,On;" />
+		<LAER File="dir" OnCommand="rotationz,90;" RyukoNoArrowP2MessageCommand="linear,0.3;diffusealpha,0"/>
+	</children></LAER>
+	
+	<LAER Type="ActorFrame" OnCommand="sleep,0.02;queuecommand,SetMe"
+		SetMeCommand="%function(self)
+			mawaru_ryuko_prize[1] = {actor = self,child = self:GetChild(''), pn = 1,pos = 1}
+		end">
+		<children>
+		<LAER File="char 2x1" OnCommand="setstate,1;animate,0;rotationz,-4;sleep,0.3;queuecommand,Rotate2;"
+		Rotate2Command="rotationz,4;sleep,0.3;queuecommand,On;" />
+	</children></LAER>
+	
+	<LAER Type="ActorFrame" OnCommand="sleep,0.02;queuecommand,SetMe"
+		SetMeCommand="%function(self)
+			mawaru_ryuko_prize[2] = {actor = self,child = self:GetChild(''), pn = 2,pos = 1}
+		end">
+		<children>
+		<LAER File="char 2x1" OnCommand="setstate,0;animate,0;rotationz,-4;sleep,0.3;queuecommand,Rotate2;"
+		Rotate2Command="rotationz,4;sleep,0.3;queuecommand,On;" />
+	</children></LAER>
+	
+	<LAER File="note 2x1" OnCommand="hidden,1;animate,0;setstate,1;sleep,0.02;queuecommand,SetMe"
+	SetMeCommand="%function(self) table.insert(mawaru_ryuko_bombs,{actor=self,id=0}) end"/>
+	<LAER File="note 2x1" OnCommand="hidden,1;animate,0;setstate,1;sleep,0.02;queuecommand,SetMe"
+	SetMeCommand="%function(self) table.insert(mawaru_ryuko_bombs,{actor=self,id=0}) end"/>
+	<LAER File="note 2x1" OnCommand="hidden,1;animate,0;setstate,1;sleep,0.02;queuecommand,SetMe"
+	SetMeCommand="%function(self) table.insert(mawaru_ryuko_bombs,{actor=self,id=0}) end"/>
+	<LAER File="note 2x1" OnCommand="hidden,1;animate,0;setstate,1;sleep,0.02;queuecommand,SetMe"
+	SetMeCommand="%function(self) table.insert(mawaru_ryuko_bombs,{actor=self,id=0}) end"/>
+	<LAER File="note 2x1" OnCommand="hidden,1;animate,0;setstate,1;sleep,0.02;queuecommand,SetMe"
+	SetMeCommand="%function(self) table.insert(mawaru_ryuko_bombs,{actor=self,id=0}) end"/>
+	<LAER File="note 2x1" OnCommand="hidden,1;animate,0;setstate,1;sleep,0.02;queuecommand,SetMe"
+	SetMeCommand="%function(self) table.insert(mawaru_ryuko_bombs,{actor=self,id=0}) end"/>
+	<LAER File="note 2x1" OnCommand="hidden,1;animate,0;setstate,1;sleep,0.02;queuecommand,SetMe"
+	SetMeCommand="%function(self) table.insert(mawaru_ryuko_bombs,{actor=self,id=0}) end"/>
+	<LAER File="note 2x1" OnCommand="hidden,1;animate,0;setstate,1;sleep,0.02;queuecommand,SetMe"
+	SetMeCommand="%function(self) table.insert(mawaru_ryuko_bombs,{actor=self,id=0}) end"/>
+	
+	<Layer File="explosion.sprite"
+	RyukoExplodeP1MessageCommand="%function(self)
+		mawaru_sound('sounds/explosion.ogg');
+		self:x(mawaru_ryuko_players[1].actor:GetX());
+		self:y(mawaru_ryuko_players[1].actor:GetY()+50);
+		self:diffusealpha(1);
+		self:setstate(0);
+		self:sleep(1.146);
+		self:diffusealpha(0);
+	end"
+	OnCommand="diffusealpha,0;zoom,1.1;vertalign,bottom;x,SCREEN_CENTER_X;y,400;" />
+	
+	<Layer File="explosion.sprite"
+	RyukoExplodeP2MessageCommand="%function(self)
+		mawaru_sound('sounds/explosion.ogg');
+		self:x(mawaru_ryuko_players[2].actor:GetX());
+		self:y(mawaru_ryuko_players[2].actor:GetY()+50);
+		self:diffusealpha(1);
+		self:setstate(0);
+		self:sleep(1.146);
+		self:diffusealpha(0);
+	end"
+	OnCommand="diffusealpha,0;zoom,1.1;vertalign,bottom;x,SCREEN_CENTER_X;y,400;" />
+	
+	<Layer Type="Quad"
+	RyukoExplodeP1MessageCommand="%function(self)
+	self:stoptweening();
+	screen:vibrate();
+	screen:effectmagnitude(10,10,10);
+	self:sleep(0.2);
+	self:queuecommand('Vib2');
+	end"
+	RyukoExplodeP2MessageCommand="%function(self)
+	self:stoptweening();
+	screen:vibrate();
+	screen:effectmagnitude(10,10,10);
+	self:sleep(0.2);
+	self:queuecommand('Vib2');
+	end"
+	Vib2Command="%function(self)
+	screen:vibrate();
+	screen:effectmagnitude(3,3,3);
+	self:sleep(0.5);
+	self:queuecommand('Vib3');
+	end"
+	Vib3Command="%function(self)
+	screen:stopeffect();
+	end"
+	/>
+	
+	<LAER Type="Quad" OnCommand="x,SCREEN_CENTER_X;y,SCREEN_CENTER_Y;zoomto,6,SCREEN_HEIGHT;diffuse,1,1,1,1"/>
+	
+	<!--hide one of the players-->
+	<LAER Type="Quad" Condition="not GAMESTATE:IsHumanPlayer(PLAYER_1)"
+	OnCommand="x,SCREEN_WIDTH*0.25;y,SCREEN_CENTER_Y;zoomto,SCREEN_WIDTH/2,SCREEN_HEIGHT;diffuse,0,0,0,1"/>
+	<LAER Type="Quad" Condition="not GAMESTATE:IsHumanPlayer(PLAYER_2)"
+	OnCommand="x,SCREEN_WIDTH*0.75;y,SCREEN_CENTER_Y;zoomto,SCREEN_WIDTH/2,SCREEN_HEIGHT;diffuse,0,0,0,1"/>
+	
+	<LAER File="numbers 2x2" OnCommand="basezoomx,0.7;basezoomy,0.7;x,SCREEN_CENTER_X-60;y,50;diffusealpha,0;animate,0;setstate,0;"
+	RyukoCountdownMessageCommand="finishtweening;diffusealpha,1;zoom,1.2;setstate,0;linear,120/145;zoom,1;queuecommand,3"
+	3Command="zoom,1.3;setstate,1;linear,120/145;zoom,1.1;queuecommand,2"
+	2Command="zoom,1.4;setstate,2;linear,120/145;zoom,1.2;queuecommand,1"
+	1Command="zoom,1.5;setstate,3;linear,120/145;zoom,1.3;sleep,0;diffusealpha,0;"
+	Condition="GAMESTATE:IsHumanPlayer(PLAYER_1)" />
+	
+	<LAER File="numbers 2x2" OnCommand="basezoomx,0.7;basezoomy,0.7;x,SCREEN_RIGHT-60;y,50;diffusealpha,0;animate,0;setstate,0;"
+	RyukoCountdownMessageCommand="finishtweening;diffusealpha,1;zoom,1.2;setstate,0;linear,120/145;zoom,1;queuecommand,3"
+	3Command="zoom,1.3;setstate,1;linear,120/145;zoom,1.1;queuecommand,2"
+	2Command="zoom,1.4;setstate,2;linear,120/145;zoom,1.2;queuecommand,1"
+	1Command="zoom,1.5;setstate,3;linear,120/145;zoom,1.3;sleep,0;diffusealpha,0;"
+	Condition="GAMESTATE:IsHumanPlayer(PLAYER_2)" /> 
+	
+</children></GAME>

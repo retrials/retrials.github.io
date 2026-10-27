@@ -1,0 +1,12 @@
+<ActorFrame><children>
+<Layer
+Type="BitmapText"
+File="_eurostile outline"
+Text="SHOOT THE QB!!"
+Command="x,SCREEN_CENTER_X;y,SCREEN_CENTER_Y-50;diffusealpha,0;zoom,4;decelerate,0.3;diffusealpha,1;zoom,2;wag;effectperiod,0.4;effectmagnitude,0,0,3;sleep,1.5;linear,1;y,530"
+/>
+<Layer
+File="qb"
+OnCommand="x,SCREEN_CENTER_X;y,SCREEN_CENTER_Y;stretchto,SCREEN_LEFT,SCREEN_TOP,SCREEN_RIGHT,SCREEN_BOTTOM;diffusealpha,0.1;sleep,(124.180-119.226);linear,0.4;diffusealpha,1;sleep,0.5;linear,0.2;diffusealpha,0"
+/>
+</children></ActorFrame>

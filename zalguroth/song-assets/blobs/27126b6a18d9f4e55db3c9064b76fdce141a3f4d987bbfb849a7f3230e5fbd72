@@ -1,0 +1,22 @@
+return Def.ActorFrame{
+  Name= "actor_zh",
+  Def.Sprite{
+    Name= "actor_Ah",--Added zoomtowidth. -Kid
+    OnCommand= cmd(x,SCREEN_CENTER_X;y,SCREEN_CENTER_Y;zoomtowidth,SCREEN_WIDTH),
+    Texture= "../bg.png",
+  },
+  Def.ActorFrame{
+    Name= "actor_Bh",--Unconverted x position. -Kid
+    OnCommand= cmd(sleep,1.15;decelerate,0.3;x,-640),
+    Def.Sprite{
+      Name= "actor_Ch",
+      OnCommand= cmd(x,SCREEN_CENTER_X;y,SCREEN_CENTER_Y;zoomy,0;decelerate,0.3;bounceend,0.2;zoomy,1;sleep,2.3;accelerate,0.3;bouncebegin,0.2;zoomy,0),
+      Texture= "../155.png",
+    },
+    Def.Sprite{
+      Name= "actor_Dh",
+      OnCommand= cmd(x,SCREEN_CENTER_X+640;y,SCREEN_CENTER_Y;zoomy,0;decelerate,0.3;bounceend,0.2;zoomy,1;sleep,2.3;accelerate,0.3;bouncebegin,0.2;zoomy,0),
+      Texture= "../170.png",
+    },
+  },
+}

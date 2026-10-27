@@ -1,0 +1,24 @@
+<ActorFrame><children>
+<Layer
+File="../../_black"
+OnCommand="x,SCREEN_CENTER_X;y,SCREEN_CENTER_Y-60;stretchto,SCREEN_LEFT,0,SCREEN_RIGHT,300;diffusealpha,0;sleep,29-2.02;sleep,0.5;decelerate,0.2;stretchto,SCREEN_LEFT,100,SCREEN_RIGHT,200;diffusealpha,0.6;sleep,3;linear,0.5;diffusealpha,0"
+/>
+<Layer
+Type="BitmapText"
+File="_eurostile outline"
+Text="Mawaru (Japanese): To turn,::change, or to visit many paces."
+OnCommand="x,SCREEN_CENTER_X;y,SCREEN_CENTER_Y-90;diffusealpha,0;zoom,4;sleep,29-2.02;sleep,0.5;decelerate,0.2;diffusealpha,1;zoom,1;sleep,3;accelerate,0.3;diffusealpha,0;"
+/>
+<Layer
+File="mawaru"
+OnCommand="x,SCREEN_CENTER_X;y,SCREEN_CENTER_Y;stretchto,SCREEN_LEFT,SCREEN_TOP,SCREEN_RIGHT,SCREEN_BOTTOM;diffusealpha,0;sleep,24-2.02;sleep,2;zoom,4;decelerate,0.3;zoom,1;diffusealpha,1;sleep,6;linear,0.5;diffusealpha,0"
+/>
+<Layer
+File="finale"
+OnCommand="x,SCREEN_CENTER_X;y,SCREEN_CENTER_Y;stretchto,SCREEN_LEFT,SCREEN_TOP,SCREEN_RIGHT,SCREEN_BOTTOM;diffusealpha,0;sleep,24-2.02;sleep,4;zoom,4;decelerate,0.3;zoom,1;diffusealpha,1;sleep,4;linear,0.5;diffusealpha,0"
+/>
+<Layer
+File="nope"
+OnCommand="x,SCREEN_CENTER_X;y,SCREEN_CENTER_Y;diffusealpha,0;sleep,24.14-2.29;linear,0;diffuse,.8,.8,.8,1;diffusealpha,1;sleep,.25;linear,0;diffusealpha,0"
+/>
+</children></ActorFrame>

@@ -1,0 +1,38 @@
+local cond_sC_result= (GAMESTATE:IsHumanPlayer(0) and GAMESTATE:GetCurrentSteps(0):GetDifficulty() == 'Difficulty_Edit') or
+	(GAMESTATE:IsHumanPlayer(1) and GAMESTATE:GetCurrentSteps(1):GetDifficulty() == 'Difficulty_Edit')
+
+local cond_rC_result= not (GAMESTATE:IsHumanPlayer(0) and GAMESTATE:GetCurrentSteps(0):GetDifficulty() == 'Difficulty_Edit') and
+	not (GAMESTATE:IsHumanPlayer(1) and GAMESTATE:GetCurrentSteps(1):GetDifficulty() == 'Difficulty_Edit')
+--GetDifficulty() == 5 becomes GetDifficulty() == 'Difficulty_Edit'
+local function optional_actor(cond, actor)
+	if cond then return actor end
+	return Def.Actor{}
+end
+
+return Def.ActorFrame{
+  Name= "actor_tC",
+  optional_actor(cond_rC_result,
+  Def.Sprite{
+    Name= "actor_uC",
+    OnCommand= function(self)
+
+	self:x(SCREEN_CENTER_X);
+	self:y(SCREEN_CENTER_Y);
+	self:zoomto(SCREEN_WIDTH,SCREEN_HEIGHT);
+
+	end,
+    Texture= "bgp1.png",
+  }),
+  optional_actor(cond_sC_result,
+  Def.Sprite{
+    Name= "actor_vC",
+    OnCommand= function(self)
+
+	self:x(SCREEN_CENTER_X);
+	self:y(SCREEN_CENTER_Y);
+	self:zoomto(SCREEN_WIDTH,SCREEN_HEIGHT);
+
+	end,
+    Texture= "bgp2.png",
+  }),
+}

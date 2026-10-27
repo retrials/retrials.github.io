@@ -1,0 +1,94 @@
+DISPLAYBPM:140-215
+
+BPMS:
+
+Intro -
+Valkyrie Dimension Speed up (90-220)
+Excitebike
+
+140 -
+Tribal style -Taron- Warm up!
+The Wave -Ayaze- Trill finale
+Next Hype -Koizu- SMASH all those 3 arrow jumps/SMASH all those jumps/Laugh at player x
+
+155 -
+The strong jaeger -Ama- crossover!
+Edge of control -Taka- Jacks
+Oosanbashi -Ayaze- 32nds!
+
+170 -
+Shining stars -Taron- Don't use the bar! OR DOUBLESTEP!
+V Heavy Beat mix -Ayaze- RAISIN STYLE/V for extreme/Laugh at player x
+--blame kris
+INTERMISSION -Ama- Shoot the QB
+
+185 -
+HeEy -Taron- Hold Wall/Holds
+Heel and Toe -Ama- Heel and Toe!/Laugh at player x
+Anisakis -Ayaze- Hello, footswitch
+
+200 -Taron- Wait, I thought this was ITG?
+Rottel-the-Mercury
+The Rotter Tarmination
+GEE
+
+215 -Ama-
+STRANGEPROGRAM - Stream like DJ SHARPNEL
+
+190/200
+
+Valkyrie Dimension - BOSS STAGE
+
+163
+
+At the speed of light!
+
+#BGCHANGES:
+//0=valkyrie dimension
+//48=NO
+//108=140bpm
+//112=tribal intro
+//116=tribal
+//132=wave intro
+//140=wave
+//156=tempz intro
+//164=tempz
+180=140to155,
+//194=jaeger intro
+//196=jaeger
+//212=control intro
+//216=control
+//232=oosanbanshi intro
+//236=oosanbanshi
+252=155to170,
+//268=nodoublesteps ("what" is (99.46-98.05) seconds in)
+//276=shining stars
+//308=raisin intro
+//312=raisin
+328.000=qb.mpg=1.000=0=0=1=====,
+341=170to185,
+//357=heey intro
+//361=heey
+//377=heel and toe intro
+//381=heel and toe
+//397=anisakis intro
+//400/401=anisakis
+417=185to200,
+//433=rottel intro
+//437=rottel
+//453=tarmination intro
+//457=tarmination
+//481=gee intro
+//485=gee
+501=200to215,
+//521=okay
+//528=let's begin
+//533=strangeprogram
+//565=boss start
+//597=valkyrie intro
+//605=valkyrie's gonna getcha
+//613=valkyrie drop
+//642.5=valkyrie faster
+//677=tension
+//679=speed of light
+//689=the end

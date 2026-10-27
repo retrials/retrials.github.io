@@ -1,0 +1,62 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+  <meta name="theme-color" content="#080d15">
+  <title>OpenITG Web</title>
+  <link rel="stylesheet" href="style.css">
+  <script src="vendor/fflate.js" defer></script>
+  <script src="controls-core.js" defer></script>
+  <script src="uploads.js" defer></script>
+  <script src="settings.js" defer></script>
+  <script src="app.js" defer></script>
+</head>
+<body>
+  <canvas id="canvas" width="640" height="480" tabindex="0" aria-label="OpenITG game canvas"></canvas>
+  <button id="settings-button" type="button" aria-haspopup="true" aria-expanded="false" aria-controls="settings-panel" aria-label="Open game menu">☰</button>
+  <button id="special-button" type="button" aria-label="Special controls" aria-haspopup="true" aria-expanded="false" aria-controls="special-controls">⋯</button>
+  <div id="special-controls" role="group" aria-label="Special controls" hidden>
+    <button data-action="4">Start</button><button data-action="5">Back</button><button data-action="6">Select</button><button data-action="7">Coin</button>
+  </div>
+  <div id="touch-controls" aria-label="Full-screen touch lanes" hidden>
+    <button class="touch-key" data-action="0" aria-label="Left arrow"><span>←</span></button>
+    <button class="touch-key" data-action="1" aria-label="Down arrow"><span>↓</span></button>
+    <button class="touch-key" data-action="2" aria-label="Up arrow"><span>↑</span></button>
+    <button class="touch-key" data-action="3" aria-label="Right arrow"><span>→</span></button>
+  </div>
+  <div id="feature-toast" role="status" hidden></div>
+  <details id="settings-panel" aria-label="Game menu">
+    <summary hidden>Game menu</summary>
+    <div class="settings-heading"><strong>OpenITG</strong><span id="controller-badge">Keyboard</span><button id="close-settings" aria-label="Close menu">×</button></div>
+    <div class="button-row"><button id="fullscreen-button" type="button">Fullscreen</button><button data-action="4">Start</button><button data-action="5">Back</button><button data-action="6">Select</button><button data-action="7">Coin</button></div>
+    <details class="menu-section"><summary>Display &amp; touch</summary>
+      <label class="setting-row">Touch arrows <select id="touch-preference"><option value="auto">Auto · touch devices</option><option value="on">Always show</option><option value="off">Hide</option></select></label>
+      <label class="setting-row">Keep screen awake <input id="wake-preference" type="checkbox" checked></label>
+      <p class="hint">Full-screen P1 touch lanes, left to right: Left, Down, Up, Right. Each lane covers one quarter of the screen width and its full height. Landscape and fullscreen are recommended. Audio starts after the explicit Start click. Fullscreen, orientation lock and wake lock depend on your browser.</p>
+    </details>
+    <details class="menu-section"><summary>Controller bindings</summary>
+      <label class="setting-row">Enable controller <input id="gamepad-enabled" type="checkbox" checked></label>
+      <label class="setting-row">Active P1 controller <select id="gamepad-device"><option value="auto">First connected controller</option></select></label>
+      <label class="setting-row">Axis/button threshold <input id="gamepad-threshold" type="range" min="0.25" max="0.85" step="0.05" value="0.5"><output id="threshold-value">0.50</output></label>
+      <p id="gamepad-status" class="hint" role="status">Connect a controller, then press and release a button to make it visible.</p>
+      <div id="gamepad-bindings" class="bindings"></div>
+      <div class="button-row"><button id="gamepad-reset">Restore preset</button><button id="gamepad-cancel-learn" hidden>Cancel mapping</button></div>
+      <p class="hint">Standard pads: D-pad/stick, A/Start = Start, B/Back = Back. Use Map for dance pads and nonstandard controllers. All browser controls feed P1's native keyboard bindings; keyboard remains usable.</p>
+    </details>
+    <details class="menu-section"><summary>Local song library</summary>
+      <p class="hint">Import original full SM songs, not a generated web package. Files stay in this browser's local storage and are never uploaded to a server. Static songs only; scripts/video/BGA extras are skipped. Only import files you trust.</p>
+      <div class="button-row"><label class="file-button">Import ZIP / SMZIP<input id="song-archive" type="file" accept=".zip,.smzip"></label><label class="file-button" id="folder-label">Import folder<input id="song-folder" type="file" webkitdirectory multiple></label><button id="library-reload">Save &amp; reload</button></div>
+      <p class="hint">32 MiB ZIP/file · 64 MiB per batch · 128 MiB local library. One UTF-8 .sm per song folder with OGG, MP3 or WAV music. Folder picking varies by browser; ZIP works on mobile.</p>
+      <p id="library-status" role="status">Preparing browser storage…</p>
+      <div id="library-list"></div>
+      <p class="hint">Imports are discovered on the next engine start/reload. Removals apply before the next start, never under a playing song. Clearing site data or private browsing can erase the library. Keep your originals.</p>
+    </details>
+    <p id="web-feature-status" class="hint" role="status"></p>
+    <div id="diagnostics-slot" class="button-row"></div>
+    <footer>OpenITG Web · local preferences &amp; library · <a href="vendor/fflate-LICENSE.txt" target="_blank" rel="noopener">ZIP decoder license</a></footer>
+  </details>
+  <pre id="engine-log" aria-label="OpenITG engine log" aria-live="off">Waiting for engine output…</pre>
+  <button id="launch-button" type="button" disabled>Downloading game data…</button>
+</body>
+</html>

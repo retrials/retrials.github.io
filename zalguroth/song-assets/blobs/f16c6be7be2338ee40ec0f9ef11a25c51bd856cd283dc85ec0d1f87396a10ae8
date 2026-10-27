@@ -1,0 +1,550 @@
+<GAME Type="ActorFrame"><children>
+
+	<LAER Type="Quad"
+		InitCommand="%function (self)
+		
+			mawaru_stream_held = {0,0,0,0,0,0,0,0};
+			
+			mawaru_stream_score = {0,0};
+		
+			mawaru_stream_note = {{},{}}
+			mawaru_stream_nptr = {1,1};
+			mawaru_stream_dirs = {90,0,180,-90}
+			
+			mawaru_stream_show = 12;
+			
+			mawaru_stream_notespacing = {SCREEN_HEIGHT*0.08,SCREEN_HEIGHT*0.08};
+			
+			mawaru_stream_diff = {1,1,1,1,2,3}
+			
+			mawaru_stream_patterns = {
+				{1,2,3,4,3,2},
+				{1,3,2,4,2,3},
+				{1,2,1,4,2,4},
+				{1,3,1,4,3,4},
+				{1,2,1,4,1,2,1,4},
+				{1,3,1,4,1,3,1,4},
+				{1,4,1,4,2,4,2,4},
+				{1,4,1,4,1,2,1,2},
+				{1,2,1,2,3,4,3,4},
+				{1,3,1,3,2,4,2,4},
+				{1,2,3,4,2,3},
+				{1,3,2,4,3,2},
+				{1,2,3,4},
+				{1,3,2,4},
+				{1,4,3,2},
+				{1,4,2,3},
+				{1,4,1,3,1,2},
+				{1,4,1,2,1,3},
+				{1,2,3,4,2,3,2,3},
+				{1,3,2,4,3,2,3,2},
+			}
+			
+			mawaru_stream_patterns2 = {
+				{1,2,4,2},
+				{1,3,4,3},
+				{1,2,4,2,3,4},
+				{1,3,4,3,2,4},
+				{1,2,4,1,3,4},
+				{1,3,4,1,2,4},
+				{1,2,3,2,4,2},
+				{1,3,2,3,4,3},
+				{1,2,4,1,4,2},
+				{1,3,4,1,4,3},
+				{1,2,4,2,4,2},
+				{1,3,4,3,4,3},
+			}
+			
+			mawaru_stream_patterns3 = {
+				{1,2,2,4},
+				{1,3,3,4},
+				{1,2,2,3},
+				{1,3,3,2},
+				{1,4,3,3},
+				{1,4,2,2},
+			}
+			
+			--generate one chart per day, so everyone in the tournament plays the same chart*
+			--*unless the machine shits the bed
+			if not mawaru_stream_chart1 then
+				mawaru_stream_chart1 = {};
+				
+				local n = 1;
+				local r = -1;
+				for j=1,200 do
+					n = math.random(1,table.getn(mawaru_stream_patterns));
+					for i=1,table.getn(mawaru_stream_patterns[n]) do
+						table.insert(mawaru_stream_chart1,mawaru_stream_patterns[n][i]);
+					end
+				end
+				
+			end
+			
+			if not mawaru_stream_chart2 then
+				mawaru_stream_chart2 = {};
+				
+				local n = 1;
+				local r = -1;
+				for j=1,200 do
+					if math.mod(j,8) == 0 then
+						n = math.random(1,table.getn(mawaru_stream_patterns3));
+						for i=1,table.getn(mawaru_stream_patterns3[n]) do
+							table.insert(mawaru_stream_chart2,mawaru_stream_patterns3[n][i]);
+						end
+					elseif math.mod(j,8) == 3 or math.mod(j,8) == 4 or math.mod(j,8) == 7 then
+						n = math.random(1,table.getn(mawaru_stream_patterns2));
+						for i=1,table.getn(mawaru_stream_patterns2[n]) do
+							table.insert(mawaru_stream_chart2,mawaru_stream_patterns2[n][i]);
+						end
+					else
+						n = math.random(1,table.getn(mawaru_stream_patterns));
+						for i=1,table.getn(mawaru_stream_patterns[n]) do
+							table.insert(mawaru_stream_chart2,mawaru_stream_patterns[n][i]);
+						end
+					end
+				end
+				
+			end
+			
+			if not mawaru_stream_chart3 then
+				mawaru_stream_chart3 = {};
+				
+				local n = 1;
+				local r = -1;
+				for j=1,200 do
+					if math.mod(j,4) ~= 0 then
+						n = math.random(1,table.getn(mawaru_stream_patterns2));
+						for i=1,table.getn(mawaru_stream_patterns2[n]) do
+							table.insert(mawaru_stream_chart3,mawaru_stream_patterns2[n][i]);
+						end
+					else
+						n = math.random(1,table.getn(mawaru_stream_patterns3));
+						for i=1,table.getn(mawaru_stream_patterns3[n]) do
+							table.insert(mawaru_stream_chart3,mawaru_stream_patterns3[n][i]);
+						end
+					end
+				end
+				
+			end
+			
+			function mawaru_stream_nextn(pn)
+				mawaru_stream_nptr[pn] = mawaru_stream_nptr[pn]+1;
+				if mawaru_stream_nptr[pn] > table.getn(mawaru_stream_note[pn]) then
+					mawaru_stream_nptr[pn] = 1
+				end
+			end
+			
+			function mawaru_stream_gety(n)
+				return SCREEN_HEIGHT*0.2;
+			end
+			
+			mawaru_stream_scale = 0.8;
+			mawaru_stream_speedmod = 1.5;
+			
+			mawaru_stream_axs = {-96,-32,32,96};
+			
+			function mawaru_stream_quantize(obj, b)
+				b = b/4;
+				local r = b-math.floor(b)
+				if r == 0 then mawaru_stream_color(obj,4)
+				elseif r == 0.5 then mawaru_stream_color(obj,8)
+				elseif (r > 0.33 and r < 0.34) or (r > 0.66 and r < 0.67) then mawaru_stream_color(obj,12)
+				elseif r == 0.25 or r == 0.75 then mawaru_stream_color(obj,16)
+				elseif (r > 0.166 and r < 0.167) or (r > 0.83 and r < 0.84) then mawaru_stream_color(obj,12)
+				elseif r == 0.125 or r == 0.375 or r == 0.625 or r == 0.875 then mawaru_stream_color(obj,32)
+				else mawaru_stream_color(obj,64) end
+			end
+			
+			function mawaru_stream_color(obj, n)
+				if n == 4 then obj:diffuse(1,0.4,0.3,1); end
+				if n == 8 then obj:diffuse(0.3,0.7,1,1); end
+				if n == 12 then obj:diffuse(1,0.4,1,1); end
+				if n == 16 then obj:diffuse(0.3,1,0.4,1); end
+				if n == 32 then obj:diffuse(1,0.8,0.3,1); end
+				if n == 64 then obj:diffuse(0.3,1,0.7,1); end
+			end
+			
+			function mawaru_stream_placenote(pn,time,dir)
+				local h = mawaru_stream_notespacing[pn];
+				
+				--Trace('nptr: '..mawaru_stream_nptr[pn]);
+				
+				local a = mawaru_stream_note[pn][mawaru_stream_nptr[pn]];
+				if not a then return end
+				
+				local b = a.actor;
+				
+				table.insert(mawaru_stream_mynotes[pn],b);
+				
+				b:hidden(0);
+				
+				mawaru_stream_quantize(b, time-1);
+				b:zoom(1)
+				b:rotationz(mawaru_stream_dirs[dir]);
+				b:x((SCREEN_WIDTH*-0.25)+((pn)*SCREEN_CENTER_X)+(mawaru_stream_axs[dir]));
+				b:y(mawaru_stream_gety(0)+((time-1)*h));
+				
+				mawaru_stream_nextn(pn);
+			end
+			
+			mawaru_stream_curnotep1 = 1;
+			mawaru_stream_curnotep2 = 1;
+			
+			function mawaru_stream_update(pn,move)
+				
+				if move then
+					mawaru_stream_mynotes[pn][1]:linear(1/math.max(mawaru_stream_nps[pn],10));
+					mawaru_stream_mynotes[pn][1]:diffusealpha(-1);
+					mawaru_stream_mynotes[pn][1]:zoom(1.4);
+					mawaru_stream_mynotes[pn][1]:sleep(0);
+					mawaru_stream_mynotes[pn][1]:diffusealpha(1);
+					mawaru_stream_mynotes[pn][1]:zoom(1);
+				
+					local ind = _G['mawaru_stream_curnotep'..pn]
+					local head = _G['mawaru_stream_chart'..mawaru_stream_diff[_G['mawaru_difficultyP'..pn]+1]][ind]
+					mawaru_stream_mynotes[pn][1]:x((SCREEN_WIDTH*-0.25)+((pn)*SCREEN_CENTER_X)+(mawaru_stream_axs[head]));
+					mawaru_stream_mynotes[pn][1]:rotationz(mawaru_stream_dirs[head]);
+					mawaru_stream_quantize(mawaru_stream_mynotes[pn][1], ind-1);
+				end
+				
+				for i=2,mawaru_stream_show do
+					if move then
+						mawaru_stream_mynotes[pn][i]:linear(1/math.max(mawaru_stream_nps[pn],10));
+						mawaru_stream_mynotes[pn][i]:y(mawaru_stream_gety(0)+(mawaru_stream_notespacing[pn]*(i-2)));
+						mawaru_stream_mynotes[pn][i]:sleep(0);
+						mawaru_stream_mynotes[pn][i]:y(mawaru_stream_gety(0)+(mawaru_stream_notespacing[pn]*(i-1)));
+						
+						local ind = _G['mawaru_stream_curnotep'..pn]+i-1
+						local body = _G['mawaru_stream_chart'..mawaru_stream_diff[_G['mawaru_difficultyP'..pn]+1]][ind]
+						mawaru_stream_mynotes[pn][i]:x((SCREEN_WIDTH*-0.25)+((pn)*SCREEN_CENTER_X)+(mawaru_stream_axs[body]));
+						mawaru_stream_mynotes[pn][i]:rotationz(mawaru_stream_dirs[body]);
+						mawaru_stream_quantize(mawaru_stream_mynotes[pn][i], ind-1);
+					else
+						mawaru_stream_mynotes[pn][i]:linear(0.1);
+						mawaru_stream_mynotes[pn][i]:y(mawaru_stream_gety(0)+(mawaru_stream_notespacing[pn]*(i-1)));
+					end
+				end
+				
+			end
+			
+		end"
+		StartCommand="%function(self)
+		
+			mawaru_stream_mynotes = {{},{}};
+			
+			mawaru_stream_score = {0,0};
+			
+			mawaru_stream_wrongnotes = {0,0}
+			
+			mawaru_stream_nps = {1,1}
+			mawaru_stream_nps_count = {0,0}
+			mawaru_stream_nps_timer = {0,0}
+			mawaru_stream_nps_hitdelay = {0,0}
+			
+			mawaru_stream_wrongwait = {0,0}
+			
+			mawaru_stream_started = {0,0}
+			
+			for pn=1,2 do
+				if GAMESTATE:IsHumanPlayer(pn-1) then
+					for i=1,mawaru_stream_show do
+						mawaru_stream_placenote(pn,i,_G['mawaru_stream_chart'..mawaru_stream_diff[_G['mawaru_difficultyP'..pn]+1]][i]);
+					end
+				end
+			end
+			
+			self:sleep(0.02);
+			self:queuecommand('Update');
+
+		end"
+		UpdateCommand="%function(self)
+			
+			--game logic
+			
+			local beat = GAMESTATE:GetSongBeat();
+			
+			--if mawaru_stream_started[1] == 1 then
+				--Trace(mawaru_stream_nps[1]..' nps');
+				--Trace(mawaru_stream_notespacing[1]..' spacing');
+			--end
+			
+			for pn=1,2 do
+				
+				if mawaru_stream_wrongwait[pn] > 0 then
+					mawaru_stream_wrongwait[pn] = mawaru_stream_wrongwait[pn]-0.02;
+				end
+				
+				if mawaru_stream_started[pn] == 1 then
+					mawaru_stream_nps_timer[pn] = mawaru_stream_nps_timer[pn]+0.02
+					mawaru_stream_nps_hitdelay[pn] = mawaru_stream_nps_hitdelay[pn]+0.02
+				end
+				
+				if mawaru_stream_nps_hitdelay[pn]>0.4 and GAMESTATE:GetSongBeat()<514 then
+					mawaru_stream_nps_hitdelay[pn] = 0;
+					mawaru_stream_nps_timer[pn] = 0;
+					mawaru_stream_nps_count[pn] = 0;
+					mawaru_stream_started[pn] = 0;
+					mawaru_stream_nps[pn] = (mawaru_stream_nps_count[pn]/math.max(mawaru_stream_nps_timer[pn],1))*1.5;
+					mawaru_stream_notespacing[pn] = (SCREEN_HEIGHT*0.08)+(SCREEN_HEIGHT*0.1*(mawaru_stream_nps[pn]/25))*(_G['mawaru_speedmodP'..pn]/5)
+					mawaru_stream_update(pn);
+				end
+				
+				--_G['mawaru_stream_p'..pn..'mtext']:settext(mawaru_round1(mawaru_stream_nps[pn]));
+				_G['mawaru_stream_p'..pn..'mtext']:settext('');
+				
+				mawaru_stream_nps[pn] = (mawaru_stream_nps_count[pn]/math.max(mawaru_stream_nps_timer[pn],1))*1.5;
+				mawaru_stream_notespacing[pn] = (SCREEN_HEIGHT*0.08)+(SCREEN_HEIGHT*0.1*(mawaru_stream_nps[pn]/25))*(_G['mawaru_speedmodP'..pn]/5)
+				
+				if GAMESTATE:IsHumanPlayer(pn-1) then
+					_G['mawaru_stream_p'..pn]:y(mawaru_stream_gety(beat));
+				else
+					_G['mawaru_stream_p'..pn]:y(-1000);
+				end
+				
+				local bpn = pn-1;
+				for i=1,4 do
+					
+					----------------------handle button presses-------------------
+					if GAMESTATE:IsHumanPlayer(pn-1) and GAMESTATE:GetSongBeat()>486 and GAMESTATE:GetSongBeat()<514 and mawaru_stream_wrongwait[pn] <= 0 then
+						if mawaru_keys[i+(bpn*4)] == 1 and mawaru_stream_held[i+(bpn*4)] == 0 then
+							
+							if i==_G['mawaru_stream_chart'..mawaru_stream_diff[_G['mawaru_difficultyP'..pn]+1]][_G['mawaru_stream_curnotep'..pn]] then
+							
+								mawaru_stream_started[pn] = 1;
+								mawaru_stream_nps_hitdelay[pn] = 0;
+								
+								_G['mawaru_stream_curnotep'..pn] = _G['mawaru_stream_curnotep'..pn]+1;
+								
+								mawaru_stream_nps_count[pn] = mawaru_stream_nps_count[pn]+1;
+								mawaru_stream_update(pn,true);
+								
+								mawaru_stream_wrongnotes[pn] = 0;
+								
+								mawaru_stream_score[pn] = mawaru_stream_score[pn]+1;
+								
+								_G['mawaru_stream_p'..pn..'ctext']:finishtweening();
+								_G['mawaru_stream_p'..pn..'ctext']:settext(mawaru_stream_score[pn]);
+								_G['mawaru_stream_p'..pn..'ctext']:diffusealpha(0.5);
+								_G['mawaru_stream_p'..pn..'ctext']:zoom(math.min(1.1+(mawaru_stream_score[pn]/200),1.6));
+								_G['mawaru_stream_p'..pn..'ctext']:linear(0.2);
+								_G['mawaru_stream_p'..pn..'ctext']:zoom(math.min(1.0+(mawaru_stream_score[pn]/200),1.5));
+							
+							else
+								
+								if mawaru_stream_wrongnotes[pn] > 2 then
+									mawaru_stream_wrongnotes[pn] = 0;
+									mawaru_stream_wrongwait[pn] = 1;
+									
+									mawaru_stream_nps_hitdelay[pn] = 0;
+									mawaru_stream_nps_timer[pn] = 0;
+									mawaru_stream_nps_count[pn] = 0;
+									mawaru_stream_started[pn] = 0;
+									mawaru_stream_nps[pn] = (mawaru_stream_nps_count[pn]/math.max(mawaru_stream_nps_timer[pn],1))*1.5;
+									mawaru_stream_notespacing[pn] = (SCREEN_HEIGHT*0.08)+(SCREEN_HEIGHT*0.1*(mawaru_stream_nps[pn]/25))*(_G['mawaru_speedmodP'..pn]/5)
+									mawaru_stream_update(pn);
+									
+									mawaru_sound('sounds/gung.ogg');
+									
+									_G['mawaru_stream_nfp'..pn]:decelerate(0.5);
+									_G['mawaru_stream_nfp'..pn]:addy(160);
+									_G['mawaru_stream_nfp'..pn]:accelerate(0.5);
+									_G['mawaru_stream_nfp'..pn]:addy(-160);
+								else
+									mawaru_stream_wrongnotes[pn] = mawaru_stream_wrongnotes[pn]+1;
+								end
+							
+							end
+							
+							mawaru_stream_held[i+(bpn*4)] = 1
+							
+						end
+					end
+					
+					----------------------don't touch this------------------------
+					--release all buttons - used for detecting if a button is newly pressed, as opposed to held
+					if mawaru_keys[i+(bpn*4)] == 0 then
+						mawaru_stream_held[i+(bpn*4)] = 0
+					end
+					---------------------end don't touch this----------------------
+					
+				end
+				
+			end
+			
+			self:sleep(0.02);
+			if mawaru_curgame == 11 then
+				self:queuecommand('Update');
+			end
+			
+		end"
+		KillCommand="%function(self)
+			--any cleanup, if necessary
+		end"
+	/>
+	
+	<LAER File="Cranked Pastry-BG.png" OnCommand="x,SCREEN_CENTER_X;y,SCREEN_CENTER_Y;zoomto,SCREEN_WIDTH,SCREEN_HEIGHT;diffuse,0.6,0.6,0.6,1" />
+	
+	<LAER Type="BitmapText" File="Combo numbers" Text="0" InitCommand="%function(self) mawaru_stream_p1ctext = self; end"
+	OnCommand="x,SCREEN_WIDTH*0.25;y,SCREEN_HEIGHT*0.5;diffusealpha,0.5;shadowlength,0;" Condition="GAMESTATE:IsHumanPlayer(0)" />
+	<LAER Type="BitmapText" File="Combo numbers" Text="0" InitCommand="%function(self) mawaru_stream_p2ctext = self; end"
+	OnCommand="x,SCREEN_WIDTH*0.75;y,SCREEN_HEIGHT*0.5;diffusealpha,0.5;shadowlength,0;" Condition="GAMESTATE:IsHumanPlayer(1)" />
+	
+	<!--LAER Type="BitmapText" File="_eurostile outline" Text="avg nps."
+	OnCommand="horizalign,right;x,-3+(SCREEN_WIDTH*0.25);y,SCREEN_HEIGHT*0.5+60;zoom,0.6;diffusealpha,0.5;shadowlength,0;" />
+	<LAER Type="BitmapText" File="_eurostile outline" Text="avg nps."
+	OnCommand="horizalign,right;x,-3+(SCREEN_WIDTH*0.75);y,SCREEN_HEIGHT*0.5+60;zoom,0.6;diffusealpha,0.5;shadowlength,0;" /-->
+	<LAER Type="BitmapText" File="ScoreDisplayPercentage percent text" Text="0" InitCommand="%function(self) mawaru_stream_p1mtext = self; end"
+	OnCommand="horizalign,left;x,3+(SCREEN_WIDTH*0.25);y,SCREEN_HEIGHT*0.5+60;zoom,0.5;diffusealpha,0.5;shadowlength,0;" />
+	<LAER Type="BitmapText" File="ScoreDisplayPercentage percent text" Text="0" InitCommand="%function(self) mawaru_stream_p2mtext = self; end"
+	OnCommand="horizalign,left;x,3+(SCREEN_WIDTH*0.75);y,SCREEN_HEIGHT*0.5+60;zoom,0.5;diffusealpha,0.5;shadowlength,0;" />
+	
+	<LAER Type="ActorFrame" InitCommand="%function(self) mawaru_stream_p1 = self end" OnCommand="x,SCREEN_WIDTH*0.25;y,SCREEN_CENTER_Y;" ><children>
+		<LAER File="receptors.sprite" OnCommand="x,-96;rotationz,90;EffectClock,beat;DiffuseRamp;EffectColor1,0.4,0.4,0.4,1;EffectColor2,1,1,1,1,1;
+		effectperiod,0.5;EffectDelay,0.5;EffectOffset,0.05" />
+		<LAER File="receptors.sprite" OnCommand="x,-32;rotationz,0;EffectClock,beat;DiffuseRamp;EffectColor1,0.4,0.4,0.4,1;EffectColor2,1,1,1,1,1;
+		effectperiod,0.5;EffectDelay,0.5;EffectOffset,0.05" />
+		<LAER File="receptors.sprite" OnCommand="x,32;rotationz,180;EffectClock,beat;DiffuseRamp;EffectColor1,0.4,0.4,0.4,1;EffectColor2,1,1,1,1,1;
+		effectperiod,0.5;EffectDelay,0.5;EffectOffset,0.05" />
+		<LAER File="receptors.sprite" OnCommand="x,96;rotationz,-90;EffectClock,beat;DiffuseRamp;EffectColor1,0.4,0.4,0.4,1;EffectColor2,1,1,1,1,1;
+		effectperiod,0.5;EffectDelay,0.5;EffectOffset,0.05" />
+	</children></LAER>
+	<LAER Type="ActorFrame" InitCommand="%function(self) mawaru_stream_p2 = self end" OnCommand="x,SCREEN_WIDTH*0.75;y,SCREEN_CENTER_Y;" ><children>
+		<LAER File="receptors.sprite" OnCommand="x,-96;rotationz,90;EffectClock,beat;DiffuseRamp;EffectColor1,0.4,0.4,0.4,1;EffectColor2,1,1,1,1,1;
+		effectperiod,0.5;EffectDelay,0.5;EffectOffset,0.05" />
+		<LAER File="receptors.sprite" OnCommand="x,-32;rotationz,0;EffectClock,beat;DiffuseRamp;EffectColor1,0.4,0.4,0.4,1;EffectColor2,1,1,1,1,1;
+		effectperiod,0.5;EffectDelay,0.5;EffectOffset,0.05" />
+		<LAER File="receptors.sprite" OnCommand="x,32;rotationz,180;EffectClock,beat;DiffuseRamp;EffectColor1,0.4,0.4,0.4,1;EffectColor2,1,1,1,1,1;
+		effectperiod,0.5;EffectDelay,0.5;EffectOffset,0.05" />
+		<LAER File="receptors.sprite" OnCommand="x,96;rotationz,-90;EffectClock,beat;DiffuseRamp;EffectColor1,0.4,0.4,0.4,1;EffectColor2,1,1,1,1,1;
+		effectperiod,0.5;EffectDelay,0.5;EffectOffset,0.05" />
+	</children></LAER>
+	
+	<LAER Type="ActorFrame" InitCommand="%function(self) mawaru_stream_nfp1 = self; end"> <children>
+		<LAER File="arrow.sprite" OnCommand="hidden,1;sleep,0.02;queuecommand,SetMe"
+		SetMeCommand="%function(self) table.insert(mawaru_stream_note[1],{actor = self}) end"
+		HideCommand="%function(self) self:hidden(1); end" />
+		<LAER File="arrow.sprite" OnCommand="hidden,1;sleep,0.02;queuecommand,SetMe"
+		SetMeCommand="%function(self) table.insert(mawaru_stream_note[1],{actor = self}) end"
+		HideCommand="%function(self) self:hidden(1); end" />
+		<LAER File="arrow.sprite" OnCommand="hidden,1;sleep,0.02;queuecommand,SetMe"
+		SetMeCommand="%function(self) table.insert(mawaru_stream_note[1],{actor = self}) end"
+		HideCommand="%function(self) self:hidden(1); end" />
+		<LAER File="arrow.sprite" OnCommand="hidden,1;sleep,0.02;queuecommand,SetMe"
+		SetMeCommand="%function(self) table.insert(mawaru_stream_note[1],{actor = self}) end"
+		HideCommand="%function(self) self:hidden(1); end" />
+		<LAER File="arrow.sprite" OnCommand="hidden,1;sleep,0.02;queuecommand,SetMe"
+		SetMeCommand="%function(self) table.insert(mawaru_stream_note[1],{actor = self}) end"
+		HideCommand="%function(self) self:hidden(1); end" />
+		<LAER File="arrow.sprite" OnCommand="hidden,1;sleep,0.02;queuecommand,SetMe"
+		SetMeCommand="%function(self) table.insert(mawaru_stream_note[1],{actor = self}) end"
+		HideCommand="%function(self) self:hidden(1); end" />
+		<LAER File="arrow.sprite" OnCommand="hidden,1;sleep,0.02;queuecommand,SetMe"
+		SetMeCommand="%function(self) table.insert(mawaru_stream_note[1],{actor = self}) end"
+		HideCommand="%function(self) self:hidden(1); end" />
+		<LAER File="arrow.sprite" OnCommand="hidden,1;sleep,0.02;queuecommand,SetMe"
+		SetMeCommand="%function(self) table.insert(mawaru_stream_note[1],{actor = self}) end"
+		HideCommand="%function(self) self:hidden(1); end" />
+		<LAER File="arrow.sprite" OnCommand="hidden,1;sleep,0.02;queuecommand,SetMe"
+		SetMeCommand="%function(self) table.insert(mawaru_stream_note[1],{actor = self}) end"
+		HideCommand="%function(self) self:hidden(1); end" />
+		<LAER File="arrow.sprite" OnCommand="hidden,1;sleep,0.02;queuecommand,SetMe"
+		SetMeCommand="%function(self) table.insert(mawaru_stream_note[1],{actor = self}) end"
+		HideCommand="%function(self) self:hidden(1); end" />
+		<LAER File="arrow.sprite" OnCommand="hidden,1;sleep,0.02;queuecommand,SetMe"
+		SetMeCommand="%function(self) table.insert(mawaru_stream_note[1],{actor = self}) end"
+		HideCommand="%function(self) self:hidden(1); end" />
+		<LAER File="arrow.sprite" OnCommand="hidden,1;sleep,0.02;queuecommand,SetMe"
+		SetMeCommand="%function(self) table.insert(mawaru_stream_note[1],{actor = self}) end"
+		HideCommand="%function(self) self:hidden(1); end" />
+		<LAER File="arrow.sprite" OnCommand="hidden,1;sleep,0.02;queuecommand,SetMe"
+		SetMeCommand="%function(self) table.insert(mawaru_stream_note[1],{actor = self}) end"
+		HideCommand="%function(self) self:hidden(1); end" />
+		<LAER File="arrow.sprite" OnCommand="hidden,1;sleep,0.02;queuecommand,SetMe"
+		SetMeCommand="%function(self) table.insert(mawaru_stream_note[1],{actor = self}) end"
+		HideCommand="%function(self) self:hidden(1); end" />
+		<LAER File="arrow.sprite" OnCommand="hidden,1;sleep,0.02;queuecommand,SetMe"
+		SetMeCommand="%function(self) table.insert(mawaru_stream_note[1],{actor = self}) end"
+		HideCommand="%function(self) self:hidden(1); end" />
+		<LAER File="arrow.sprite" OnCommand="hidden,1;sleep,0.02;queuecommand,SetMe"
+		SetMeCommand="%function(self) table.insert(mawaru_stream_note[1],{actor = self}) end"
+		HideCommand="%function(self) self:hidden(1); end" />
+		<LAER File="arrow.sprite" OnCommand="hidden,1;sleep,0.02;queuecommand,SetMe"
+		SetMeCommand="%function(self) table.insert(mawaru_stream_note[1],{actor = self}) end"
+		HideCommand="%function(self) self:hidden(1); end" />
+		<LAER File="arrow.sprite" OnCommand="hidden,1;sleep,0.02;queuecommand,SetMe"
+		SetMeCommand="%function(self) table.insert(mawaru_stream_note[1],{actor = self}) end"
+		HideCommand="%function(self) self:hidden(1); end" />
+		<LAER File="arrow.sprite" OnCommand="hidden,1;sleep,0.02;queuecommand,SetMe"
+		SetMeCommand="%function(self) table.insert(mawaru_stream_note[1],{actor = self}) end"
+		HideCommand="%function(self) self:hidden(1); end" />
+		<LAER File="arrow.sprite" OnCommand="hidden,1;sleep,0.02;queuecommand,SetMe"
+		SetMeCommand="%function(self) table.insert(mawaru_stream_note[1],{actor = self}) end"
+		HideCommand="%function(self) self:hidden(1); end" />
+	</children></LAER>
+	
+	<LAER Type="ActorFrame" InitCommand="%function(self) mawaru_stream_nfp2 = self; end"> <children>
+		<LAER File="arrow.sprite" OnCommand="hidden,1;sleep,0.02;queuecommand,SetMe"
+		SetMeCommand="%function(self) table.insert(mawaru_stream_note[2],{actor = self}) end"
+		HideCommand="%function(self) self:hidden(1); end" />
+		<LAER File="arrow.sprite" OnCommand="hidden,1;sleep,0.02;queuecommand,SetMe"
+		SetMeCommand="%function(self) table.insert(mawaru_stream_note[2],{actor = self}) end"
+		HideCommand="%function(self) self:hidden(1); end" />
+		<LAER File="arrow.sprite" OnCommand="hidden,1;sleep,0.02;queuecommand,SetMe"
+		SetMeCommand="%function(self) table.insert(mawaru_stream_note[2],{actor = self}) end"
+		HideCommand="%function(self) self:hidden(1); end" />
+		<LAER File="arrow.sprite" OnCommand="hidden,1;sleep,0.02;queuecommand,SetMe"
+		SetMeCommand="%function(self) table.insert(mawaru_stream_note[2],{actor = self}) end"
+		HideCommand="%function(self) self:hidden(1); end" />
+		<LAER File="arrow.sprite" OnCommand="hidden,1;sleep,0.02;queuecommand,SetMe"
+		SetMeCommand="%function(self) table.insert(mawaru_stream_note[2],{actor = self}) end"
+		HideCommand="%function(self) self:hidden(1); end" />
+		<LAER File="arrow.sprite" OnCommand="hidden,1;sleep,0.02;queuecommand,SetMe"
+		SetMeCommand="%function(self) table.insert(mawaru_stream_note[2],{actor = self}) end"
+		HideCommand="%function(self) self:hidden(1); end" />
+		<LAER File="arrow.sprite" OnCommand="hidden,1;sleep,0.02;queuecommand,SetMe"
+		SetMeCommand="%function(self) table.insert(mawaru_stream_note[2],{actor = self}) end"
+		HideCommand="%function(self) self:hidden(1); end" />
+		<LAER File="arrow.sprite" OnCommand="hidden,1;sleep,0.02;queuecommand,SetMe"
+		SetMeCommand="%function(self) table.insert(mawaru_stream_note[2],{actor = self}) end"
+		HideCommand="%function(self) self:hidden(1); end" />
+		<LAER File="arrow.sprite" OnCommand="hidden,1;sleep,0.02;queuecommand,SetMe"
+		SetMeCommand="%function(self) table.insert(mawaru_stream_note[2],{actor = self}) end"
+		HideCommand="%function(self) self:hidden(1); end" />
+		<LAER File="arrow.sprite" OnCommand="hidden,1;sleep,0.02;queuecommand,SetMe"
+		SetMeCommand="%function(self) table.insert(mawaru_stream_note[2],{actor = self}) end"
+		HideCommand="%function(self) self:hidden(1); end" />
+		<LAER File="arrow.sprite" OnCommand="hidden,1;sleep,0.02;queuecommand,SetMe"
+		SetMeCommand="%function(self) table.insert(mawaru_stream_note[2],{actor = self}) end"
+		HideCommand="%function(self) self:hidden(1); end" />
+		<LAER File="arrow.sprite" OnCommand="hidden,1;sleep,0.02;queuecommand,SetMe"
+		SetMeCommand="%function(self) table.insert(mawaru_stream_note[2],{actor = self}) end"
+		HideCommand="%function(self) self:hidden(1); end" />
+		<LAER File="arrow.sprite" OnCommand="hidden,1;sleep,0.02;queuecommand,SetMe"
+		SetMeCommand="%function(self) table.insert(mawaru_stream_note[2],{actor = self}) end"
+		HideCommand="%function(self) self:hidden(1); end" />
+		<LAER File="arrow.sprite" OnCommand="hidden,1;sleep,0.02;queuecommand,SetMe"
+		SetMeCommand="%function(self) table.insert(mawaru_stream_note[2],{actor = self}) end"
+		HideCommand="%function(self) self:hidden(1); end" />
+		<LAER File="arrow.sprite" OnCommand="hidden,1;sleep,0.02;queuecommand,SetMe"
+		SetMeCommand="%function(self) table.insert(mawaru_stream_note[2],{actor = self}) end"
+		HideCommand="%function(self) self:hidden(1); end" />
+		<LAER File="arrow.sprite" OnCommand="hidden,1;sleep,0.02;queuecommand,SetMe"
+		SetMeCommand="%function(self) table.insert(mawaru_stream_note[2],{actor = self}) end"
+		HideCommand="%function(self) self:hidden(1); end" />
+		<LAER File="arrow.sprite" OnCommand="hidden,1;sleep,0.02;queuecommand,SetMe"
+		SetMeCommand="%function(self) table.insert(mawaru_stream_note[2],{actor = self}) end"
+		HideCommand="%function(self) self:hidden(1); end" />
+		<LAER File="arrow.sprite" OnCommand="hidden,1;sleep,0.02;queuecommand,SetMe"
+		SetMeCommand="%function(self) table.insert(mawaru_stream_note[2],{actor = self}) end"
+		HideCommand="%function(self) self:hidden(1); end" />
+		<LAER File="arrow.sprite" OnCommand="hidden,1;sleep,0.02;queuecommand,SetMe"
+		SetMeCommand="%function(self) table.insert(mawaru_stream_note[2],{actor = self}) end"
+		HideCommand="%function(self) self:hidden(1); end" />
+		<LAER File="arrow.sprite" OnCommand="hidden,1;sleep,0.02;queuecommand,SetMe"
+		SetMeCommand="%function(self) table.insert(mawaru_stream_note[2],{actor = self}) end"
+		HideCommand="%function(self) self:hidden(1); end" />
+	</children></LAER>
+	
+	<LAER Type="Quad" InitCommand="%function(self) mawaru_stream_controller = self end" />
+
+</children></GAME>

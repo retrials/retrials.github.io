@@ -1,0 +1,14 @@
+<ActorFrame><children>
+	
+	<Layer
+		Class="Autoactor"
+		File="bg"
+		OnCommand="x,SCREEN_CENTER_X;y,SCREEN_CENTER_Y;"
+	/>
+	<Layer
+		Class="Autoactor"
+		File="warning"
+		OnCommand="x,SCREEN_CENTER_X;y,SCREEN_CENTER_Y+15;zoomy,0;sleep,0.3;linear,0.3;zoomy,1;diffusealpha,1;glowshift;effectperiod,0.6;effectcolor1,1,0,0,0.4;effectcolor2,1,0,0,0;decelerate,0.1;sleep,3;linear,0.3;zoomy,0;"
+	/>
+	
+</children></ActorFrame>

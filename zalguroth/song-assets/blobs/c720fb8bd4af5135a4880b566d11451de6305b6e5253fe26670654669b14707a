@@ -1,0 +1,40 @@
+<Layer Type="ActorFrame" StartCommand="hidden,0;playcommand,Update"><children>
+	<Layer Type="Quad" OnCommand="zoomto,SCREEN_WIDTH,SCREEN_HEIGHT;x,SCREEN_CENTER_X;y,SCREEN_CENTER_Y;diffuse,0,0,0,1" />
+	<Layer File="doit" OnCommand="x,SCREEN_CENTER_X;y,SCREEN_CENTER_Y;diffuse,.5,.5,.5,1;zoomto,SCREEN_WIDTH,SCREEN_HEIGHT" />
+	
+	<Layer File="simon" OnCommand="vertalign,top;y,SCREEN_TOP+20;x,SCREEN_CENTER_X;zoom,0.75;"/>
+	
+	<Layer File="do.sprite" OnCommand="zoom,1.5;x,SCREEN_CENTER_X;y,SCREEN_CENTER_Y;diffusealpha,0;rotationz,-75;"
+	UpdateCommand="%function(self)
+		self:Load(songName..'lua/doit/task00'..math.random(20,28)..'.png');
+		--the system here uses load sprite to generate the random tasks, instead of spawning all 6 of the graphics at the beginning of the file.
+		self:queuecommand('Spawn');
+	end"
+	SpawnCommand="sleep,0.5;decelerate,0.5;zoom,1;diffusealpha,1;rotationz,0"
+	/>
+	
+	<Layer Type="Quad" OnCommand="%function(self)
+		mawaru_doit_disqualifyp1 = false;
+		mawaru_doit_disqualifyp2 = false;
+	end"
+	DisqualifyPlayer1MessageCommand="%function(self)
+		if GAMESTATE:GetSongBeat()>440 and GAMESTATE:GetSongBeat()<454 then
+			mawaru_doit_disqualifyp1 = true
+			mawaru_gamesP1[3] = 0;
+			mawaru_gfx_gradep1:diffusealpha(1);
+			mawaru_gfx_gradep1:setstate(0);
+			mawaru_sound('sounds/bad.ogg');
+		end
+	end"
+	DisqualifyPlayer2MessageCommand="%function(self)
+		if GAMESTATE:GetSongBeat()>440 and GAMESTATE:GetSongBeat()<454 then
+			mawaru_doit_disqualifyp2 = true
+			mawaru_gamesP2[3] = 0;
+			mawaru_gfx_gradep2:diffusealpha(1);
+			mawaru_gfx_gradep2:setstate(0);
+			mawaru_sound('sounds/bad.ogg');
+		end
+	end"
+	/>
+	
+</children></Layer>

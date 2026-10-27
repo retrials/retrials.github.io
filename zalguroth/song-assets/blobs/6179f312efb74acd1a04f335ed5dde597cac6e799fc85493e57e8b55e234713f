@@ -1,0 +1,305 @@
+<GAME Type="ActorFrame"><children>
+
+	<LAER Type="Quad"
+		InitCommand="%function(self)
+		
+			--this is where variables go when the simfile starts up
+			--function declarations, and things that will never change even
+			--if this particular minigame is restarted after being played once before
+		
+			--for storing if a button is held down
+			mawaru_twin_held = {0,0,0,0,0,0,0,0};
+			
+			mawaru_twin_baes = {};
+			mawaru_twin_grade = {};
+			mawaru_twin_arrows = {{},{}};
+			
+			mawaru_twin_dirs = {1,0,2,3};
+			mawaru_twin_rots = {90,180,-90};
+			
+			mawaru_twin_score = {0,0};
+			
+			mawaru_twin_wrong_sound = false;
+			
+			function mawaru_twin_correct(pn)
+			
+				mawaru_twin_score[pn] = mawaru_twin_score[pn]+1;
+								
+				_G['mawaru_twin_p'..pn..'ctext']:finishtweening();
+				_G['mawaru_twin_p'..pn..'ctext']:settext(mawaru_twin_score[pn]);
+				_G['mawaru_twin_p'..pn..'ctext']:zoom(math.min(1.1+(mawaru_twin_score[pn]/20),1.6));
+				_G['mawaru_twin_p'..pn..'ctext']:linear(0.2);
+				_G['mawaru_twin_p'..pn..'ctext']:zoom(math.min(1.0+(mawaru_twin_score[pn]/20),1.5));
+				
+				mawaru_sound('sounds/twin_good_'..pn..'.ogg');
+				
+				mawaru_twin_grade[pn]:setstate(1);
+				mawaru_twin_grade[pn]:diffusealpha(1);
+				mawaru_twin_grade[pn]:sleep(0.2);
+				mawaru_twin_grade[pn]:linear(0.4);
+				mawaru_twin_grade[pn]:diffusealpha(0);
+				
+			end
+			
+			function mawaru_twin_wrong(pn)
+				if not mawaru_twin_wrong_sound then
+					mawaru_sound('sounds/twin_bad.ogg');
+					mawaru_twin_wrong_sound = true;
+				end
+				
+				mawaru_twin_grade[pn]:setstate(0);
+				mawaru_twin_grade[pn]:diffusealpha(1);
+				mawaru_twin_grade[pn]:sleep(0.2);
+				mawaru_twin_grade[pn]:linear(0.4);
+				mawaru_twin_grade[pn]:diffusealpha(0);
+				
+			end
+			
+			function mawaru_twin_check(pn)
+				local str = string.sub(mawaru_twin_strings[pn],-2)
+				Trace('Checking string: '..str);
+				if mawaru_twin_answer == 1 then
+					if str == '23' or str == '32' then
+						mawaru_twin_correct(pn)
+					elseif mawaru_twin_strings[pn] ~= '' then
+						mawaru_twin_wrong(pn)
+					end
+				elseif mawaru_twin_answer == 2 then
+					if str == '13' or str == '31' then
+						mawaru_twin_correct(pn)
+					elseif mawaru_twin_strings[pn] ~= '' then
+						mawaru_twin_wrong(pn)
+					end
+				elseif mawaru_twin_answer == 3 then
+					if str == '21' or str == '12' then
+						mawaru_twin_correct(pn)
+					elseif mawaru_twin_strings[pn] ~= '' then
+						mawaru_twin_wrong(pn)
+					end
+				end
+			end
+			
+			mawaru_twin_cur = 1;
+			mawaru_twin_state = 0; --0 = down, 1 = up;
+			mawaru_twin_timing = {207.80,209.06,
+								209.47,210.66,
+								211.06,212.17,
+								212.56,213.64,
+								213.99,215.02,
+								215.37,216.38,
+								216.71,217.69,
+								218.00,218.95,
+								219.25,220.16,
+								220.46,221.35,
+								221.64,222.51,
+								222.80,223.64,
+								223.93,224.75,
+								225.02,225.84,
+								226.11,226.89,9999
+								};
+			
+			mawaru_twin_last = -1;
+			mawaru_twin_last2 = -1;
+			
+		end"
+		StartCommand="%function(self)
+			
+			--variables set up when a game is started
+			--wait 2 seconds (for the curtain or whatever) before accepting any inputs
+			mawaru_twin_lockinput = {2,2};
+			
+			for i=1,3 do
+				mawaru_twin_baes[i]:hidden(0);
+				mawaru_twin_baes[i]:animate(0);
+				mawaru_twin_baes[i]:diffusealpha(0);
+				mawaru_twin_baes[i]:addy(60);
+			end
+			
+			for pn=1,2 do
+				for i=1,2 do
+					mawaru_twin_arrows[pn][i]:hidden(1);
+				end
+			end
+			
+			mawaru_twin_strings = {'',''}
+			
+			mawaru_twin_score = {0,0};
+			
+			mawaru_twin_answer = -1;
+			
+			self:sleep(0.02);
+			self:queuecommand('Update');
+
+		end"
+		UpdateCommand="%function(self)
+			
+			--[[
+			Trace('len: '..string.len(mawaru_twin_strings[1]));
+			if string.len(mawaru_twin_strings[1]) > 0 then
+				Trace('last: '..mawaru_twin_rots[tonumber(string.sub(mawaru_twin_strings[1],-1,-1))]);
+			end
+			]]
+			
+			for pn=1,2 do
+				for i=1,2 do
+					if string.len(mawaru_twin_strings[pn]) < i then
+						mawaru_twin_arrows[pn][i]:hidden(1);
+					else
+						mawaru_twin_arrows[pn][i]:hidden(0);
+					end
+				end
+				if string.len(mawaru_twin_strings[1]) == 1 then
+					mawaru_twin_arrows[pn][1]:rotationz(mawaru_twin_rots[tonumber(string.sub(mawaru_twin_strings[1],-1,-1))]);
+				else
+					local str = string.sub(mawaru_twin_strings[pn],-2);
+					if str == '12' or str == '21' then
+						mawaru_twin_arrows[pn][1]:rotationz(mawaru_twin_rots[1]);
+						mawaru_twin_arrows[pn][2]:rotationz(mawaru_twin_rots[2]);
+					elseif str == '23' or str == '32' then
+						mawaru_twin_arrows[pn][1]:rotationz(mawaru_twin_rots[2]);
+						mawaru_twin_arrows[pn][2]:rotationz(mawaru_twin_rots[3]);
+					elseif str == '13' or str == '31' then
+						mawaru_twin_arrows[pn][1]:rotationz(mawaru_twin_rots[1]);
+						mawaru_twin_arrows[pn][2]:rotationz(mawaru_twin_rots[3]);
+					end
+				end
+			end
+			
+			
+			if mawaru_song_time > mawaru_twin_timing[mawaru_twin_cur]-.05 and mawaru_song_time < mawaru_twin_timing[mawaru_twin_cur]+1 then
+				
+				if mawaru_twin_state == 0 then
+					
+					mawaru_twin_answer = math.random(1,3);
+					
+					local right = math.random(0,7);
+					while right == mawaru_twin_last or right == mawaru_twin_last2 do
+						right = math.random(0,7);
+					end
+					mawaru_twin_last = right;
+					
+					local wrong = math.random(0,7);
+					while wrong == mawaru_twin_last or wrong == mawaru_twin_last2 or wrong == right do
+						wrong = math.random(0,7);
+					end
+					mawaru_twin_last2 = wrong;
+					
+					for i=1,3 do
+						if i == mawaru_twin_answer then
+							mawaru_twin_baes[i]:setstate(wrong);
+						else
+							mawaru_twin_baes[i]:setstate(right);
+						end
+						mawaru_twin_baes[i]:linear(0.1);
+						mawaru_twin_baes[i]:diffusealpha(1);
+						mawaru_twin_baes[i]:addy(-60);
+					end
+					
+					mawaru_twin_state = 1;
+				else
+					
+					for i=1,3 do
+						mawaru_twin_baes[i]:linear(0.1);
+						mawaru_twin_baes[i]:diffusealpha(0);
+						mawaru_twin_baes[i]:addy(60);
+					end
+					
+					for pn=1,2 do
+						if GAMESTATE:IsHumanPlayer(pn-1) then
+							mawaru_twin_check(pn)
+						end
+					end
+					
+					mawaru_twin_wrong_sound = false;
+					mawaru_twin_strings = {'',''}
+					mawaru_twin_state = 0;
+				end
+				
+				mawaru_twin_cur = mawaru_twin_cur+1;
+			end
+			
+			for pn=1,2 do
+				
+				if mawaru_twin_lockinput[pn]>0 then
+					mawaru_twin_lockinput[pn] = mawaru_twin_lockinput[pn]-0.02
+				end
+			
+				local bpn = pn-1;
+				for i=1,4 do
+					
+					----------------------handle button presses-------------------
+					if mawaru_twin_lockinput[pn] <= 0 then
+						if mawaru_keys[i+(bpn*4)] == 1 and mawaru_twin_held[i+(bpn*4)] == 0 then
+							
+							if mawaru_twin_state == 1 and i ~= 2 then
+								mawaru_twin_strings[pn] = mawaru_twin_strings[pn]..mawaru_twin_dirs[i]
+							end
+							
+							mawaru_twin_held[i+(bpn*4)] = 1
+						end
+						
+					end
+					
+					
+					----------------------don't touch this------------------------
+					--release all buttons - used for detecting if a button is newly pressed, as opposed to held
+					if mawaru_keys[i+(bpn*4)] == 0 then
+						mawaru_twin_held[i+(bpn*4)] = 0
+					end
+					---------------------end don't touch this----------------------
+					
+				end
+			end
+			
+			self:sleep(0.02);
+			if mawaru_curgame == 12 then
+				self:queuecommand('Update');
+			end
+			
+		end"
+		KillCommand="%function(self)
+			--any cleanup, if necessary
+		end"
+	/>
+	
+	<LAER Type="Quad" InitCommand="%function(self) mawaru_twin_controller = self end" />
+	
+	<LAER File="bg" OnCommand="x,SCREEN_CENTER_X;y,SCREEN_CENTER_Y;zoomto,SCREEN_WIDTH*1.8,SCREEN_HEIGHT*1.8;spin;effectmagnitude,0,0,2;effectclock,timer" />
+	<LAER File="grid" OnCommand="x,SCREEN_CENTER_X;y,SCREEN_CENTER_Y;zoomto,SCREEN_WIDTH,SCREEN_HEIGHT;blend,add;
+	diffuseshift;effectcolor1,0,1,0.3,0.1;effectcolor2,1,1,1,0.3;effectperiod,3;effectclock,timer;" />
+	
+	<LAER File="baes" OnCommand="hidden,1;x,SCREEN_WIDTH*0.25;y,SCREEN_HEIGHT*0.6;sleep,0.02;queuecommand,SetMe;"
+	SetMeCommand="%function(self) table.insert(mawaru_twin_baes,self); end" />
+	<LAER File="baes" OnCommand="hidden,1;x,SCREEN_WIDTH*0.5;y,SCREEN_HEIGHT*0.6;sleep,0.02;queuecommand,SetMe;"
+	SetMeCommand="%function(self) table.insert(mawaru_twin_baes,self); end" />
+	<LAER File="baes" OnCommand="hidden,1;x,SCREEN_WIDTH*0.75;y,SCREEN_HEIGHT*0.6;sleep,0.02;queuecommand,SetMe;"
+	SetMeCommand="%function(self) table.insert(mawaru_twin_baes,self); end" />
+	
+	<LAER File="arrow1" OnCommand="x,SCREEN_WIDTH*0.25;y,SCREEN_HEIGHT*0.3;rotationz,90" />
+	<LAER File="arrow1" OnCommand="x,SCREEN_WIDTH*0.5;y,SCREEN_HEIGHT*0.3;rotationz,180" />
+	<LAER File="arrow1" OnCommand="x,SCREEN_WIDTH*0.75;y,SCREEN_HEIGHT*0.3;rotationz,-90" />
+	
+	<LAER Type="Quad" OnCommand="x,SCREEN_WIDTH*0.15;y,SCREEN_HEIGHT*0.9;zoomto,120,60;diffuse,0,0,0,.6" />
+	<LAER Type="Quad" OnCommand="x,SCREEN_WIDTH*0.85;y,SCREEN_HEIGHT*0.9;zoomto,120,60;diffuse,0,0,0,.6" />
+	
+	<LAER File="arrow2" OnCommand="zoom,0.8;x,(SCREEN_WIDTH*0.15)-32;y,SCREEN_HEIGHT*0.9;rotationz,-90;queuecommand,SetMe;"
+	SetMeCommand="%function(self) table.insert(mawaru_twin_arrows[1],self); end" />
+	<LAER File="arrow2" OnCommand="zoom,0.8;x,(SCREEN_WIDTH*0.15)+32;y,SCREEN_HEIGHT*0.9;rotationz,-90;queuecommand,SetMe;"
+	SetMeCommand="%function(self) table.insert(mawaru_twin_arrows[1],self); end" />
+	
+	<LAER File="arrow2" OnCommand="zoom,0.8;x,(SCREEN_WIDTH*0.85)-32;y,SCREEN_HEIGHT*0.9;rotationz,-90;queuecommand,SetMe;"
+	SetMeCommand="%function(self) table.insert(mawaru_twin_arrows[2],self); end" />
+	<LAER File="arrow2" OnCommand="zoom,0.8;x,(SCREEN_WIDTH*0.85)+32;y,SCREEN_HEIGHT*0.9;rotationz,-90;queuecommand,SetMe;"
+	SetMeCommand="%function(self) table.insert(mawaru_twin_arrows[2],self); end" />
+	
+	<LAER File="grade 2x1.png" OnCommand="animate,0;zoom,1;x,SCREEN_WIDTH*0.25;y,SCREEN_HEIGHT*0.6;diffusealpha,0;queuecommand,SetMe;"
+	SetMeCommand="%function(self) table.insert(mawaru_twin_grade,self); end" />
+	<LAER File="grade 2x1.png" OnCommand="animate,0;zoom,1;x,SCREEN_WIDTH*0.75;y,SCREEN_HEIGHT*0.6;diffusealpha,0;queuecommand,SetMe;"
+	SetMeCommand="%function(self) table.insert(mawaru_twin_grade,self); end" />
+	
+	<LAER Type="BitmapText" File="Combo numbers" Text="0" InitCommand="%function(self) mawaru_twin_p1ctext = self; end"
+	OnCommand="x,SCREEN_WIDTH*0.1;y,SCREEN_HEIGHT*0.1;diffusealpha,1;shadowlength,0;" Condition="GAMESTATE:IsHumanPlayer(0)" />
+	<LAER Type="BitmapText" File="Combo numbers" Text="0" InitCommand="%function(self) mawaru_twin_p2ctext = self; end"
+	OnCommand="x,SCREEN_WIDTH*0.9;y,SCREEN_HEIGHT*0.1;diffusealpha,1;shadowlength,0;" Condition="GAMESTATE:IsHumanPlayer(1)" />
+	
+</children></GAME>

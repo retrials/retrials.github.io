@@ -1,0 +1,18 @@
+<ActorFrame><children>
+<Layer
+		Type="Quad"
+		OnCommand="stretchto,SCREEN_LEFT,SCREEN_TOP,SCREEN_RIGHT,SCREEN_BOTTOM;diffuse,#000000;diffusealpha,0;linear,0.25;diffusealpha,1;sleep,4.5;linear,0.25;diffusealpha,0;"
+	/>
+<Layer
+File="thanks"
+InitCommand="x,SCREEN_CENTER_X;y,SCREEN_CENTER_Y;stretchto,SCREEN_LEFT,SCREEN_TOP,SCREEN_RIGHT,SCREEN_BOTTOM;diffusealpha,0;zoom,4;decelerate,0.2;zoom,1;diffusealpha,1;sleep,4;linear,0.5;diffusealpha,0"
+/>
+<Layer
+File="end"
+InitCommand="x,SCREEN_CENTER_X;y,SCREEN_CENTER_Y;stretchto,SCREEN_LEFT,SCREEN_TOP,SCREEN_RIGHT,SCREEN_BOTTOM;diffusealpha,0;sleep,1;linear,3;diffusealpha,0.6;linear,1;diffusealpha,0"
+/>
+<Layer
+File="ach"
+InitCommand="x,SCREEN_CENTER_X;y,SCREEN_CENTER_Y;diffusealpha,0;sleep,4.8;linear,0.1;diffusealpha,1;sleep,0.8;linear,0.2;diffusealpha,0"
+/>
+</children></ActorFrame>

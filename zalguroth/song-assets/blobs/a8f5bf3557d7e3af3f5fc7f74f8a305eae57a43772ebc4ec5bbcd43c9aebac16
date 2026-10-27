@@ -1,0 +1,50 @@
+local function diff_to_num(difficulty)--Yes, it's dumb, but I'm lazy. -Kid
+    if difficulty == 'Difficulty_Beginner' then return 0 end
+    if difficulty == 'Difficulty_Easy' then return 1 end
+    if difficulty == 'Difficulty_Medium' then return 2 end
+    if difficulty == 'Difficulty_Hard' then return 3 end
+    if difficulty == 'Difficulty_Challenge' then return 4 end
+    if difficulty == 'Difficulty_Edit' then return 5 end
+end
+local cond_bd_result= GAMESTATE:IsHumanPlayer(0)
+
+local cond_cd_result= GAMESTATE:IsHumanPlayer(1)
+
+local function optional_actor(cond, actor)
+	if cond then return actor end
+	return Def.Actor{}
+end
+
+return Def.ActorFrame{
+  Name= "actor_dd",
+  Def.Sprite{
+    Name= "actor_ed",--Made image completely black, added zoomtowidth. -Kid
+    OnCommand= cmd(x,SCREEN_CENTER_X;y,SCREEN_CENTER_Y;zoomtowidth,SCREEN_WIDTH;diffusealpha,0;linear,0.5;diffusealpha,1;sleep,17;linear,0.5;diffusealpha,0),
+    Texture= "_black.png",
+  },
+  optional_actor(cond_bd_result,
+      --Layer isn't an actual type! Replaced with Def.Sprite. -Kid
+      --File= replaced with Texture=. -Kid
+  Def.Sprite{
+    Name= "actor_fd",
+    Texture= diff_to_num(GAMESTATE:GetCurrentSteps(PLAYER_1):GetDifficulty()),
+    OnCommand= cmd(cropleft,0.15;cropright,0.15;x,SCREEN_CENTER_X-160;vertalign,bottom;y,SCREEN_CENTER_Y + -240;linear,1.2;y,360;linear,4.82;y,360+1600),
+  }),--Unconverted y positions. -Kid
+  optional_actor(cond_cd_result,
+  Def.Sprite{
+    Name= "actor_gd",
+    Texture= diff_to_num(GAMESTATE:GetCurrentSteps(PLAYER_2):GetDifficulty()),
+    OnCommand= cmd(cropleft,0.15;cropright,0.15;x,SCREEN_CENTER_X+160;vertalign,bottom;y,SCREEN_CENTER_Y + -240;linear,1.2;y,360;linear,4.82;y,360+1600),
+  }),
+  Def.Sprite{
+    Name= "actor_hd",
+    OnCommand= cmd(x,SCREEN_CENTER_X;y,SCREEN_CENTER_Y;diffusealpha,0;linear,0.5;diffusealpha,1;sleep,6;linear,0.5;diffusealpha,0),
+    Texture= "overlay.png",
+  },
+  Def.BitmapText{
+    Name= "actor_id",--CommandCommand becomes OnCommand. -Kid
+    OnCommand= cmd(x,SCREEN_CENTER_X;y,SCREEN_CENTER_Y-50;diffusealpha,0;zoom,4;decelerate,0.1;diffusealpha,1;zoom,2;wag;effectperiod,0.4;effectmagnitude,0,0,3;sleep,.5;accelerate,0.3;y,SCREEN_CENTER_Y + 310;linear,0;diffusealpha,0),
+    Font= "_eurostile blue glow",
+    Text= "Wait, I\nthought this\nwas ITG!?",--Replace '::' with '\n'. -Kid
+  },
+}

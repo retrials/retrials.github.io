@@ -1,0 +1,8 @@
+return Def.ActorFrame{
+  Name= "actor_B",
+  Def.Sprite{
+    Name= "actor_C",--Added zoomtowidth. -Kid
+    OnCommand= cmd(x,SCREEN_CENTER_X;y,SCREEN_CENTER_Y;zoomtowidth,SCREEN_WIDTH),
+    Texture= "img.png",
+  },
+}

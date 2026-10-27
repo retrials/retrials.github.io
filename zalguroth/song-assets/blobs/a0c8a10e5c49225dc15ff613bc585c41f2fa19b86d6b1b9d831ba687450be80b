@@ -1,0 +1,8 @@
+<ActorFrame><children>
+<Layer
+Type="BitmapText"
+File="_eurostile outline"
+Text="32NDS!!"
+Command="x,SCREEN_CENTER_X;y,SCREEN_CENTER_Y-50;diffusealpha,0;zoom,4;decelerate,0.2;diffusealpha,1;zoom,2;wag;effectperiod,0.4;effectmagnitude,0,0,3;sleep,1.1;accelerate,0.4;y,530"
+/>
+</children></ActorFrame>

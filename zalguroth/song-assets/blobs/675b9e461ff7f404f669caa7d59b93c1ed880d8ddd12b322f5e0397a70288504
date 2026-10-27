@@ -1,0 +1,208 @@
+return Def.ActorFrame{
+  Name= "actor_rcb",
+  Def.Quad{
+    Name= "actor_scb",
+    InitCommand= function(self)
+		
+			--this is where variables go when the simfile starts up
+			--function declarations, and things that will never change even
+			--if this particular minigame is restarted after being played once before
+		
+			--for storing if a button is held down
+			mawaru_key_held = {0,0,0,0,0,0,0,0};
+			
+			mawaru_key_st = 0;
+			
+			mawaru_key_rots = {90,0,180,-90};
+			
+			mawaru_key_times = {.3,.3,.3,.25,.2,.1}
+			
+		end,
+    KillCommand= function(self)
+			--any cleanup, if necessary
+		end,
+    StartCommand= function(self)
+		
+			mawaru_key_longest = mawaru_key_times[mawaru_mindifficulty+1];
+			
+			--variables set up when a game is started
+			--wait 2 seconds (for the curtain or whatever) before accepting any inputs
+			mawaru_key_lockinput = {2,2};
+			
+			mawaru_key_dir = {math.random(1,4),math.random(1,4)};
+			
+			mawaru_key_won = {-1,-1}
+			mawaru_key_bracketed = {0,0}
+			mawaru_key_decided = false;
+			
+			mawaru_key_notespawned = false;
+			mawaru_key_soundplayed = false;
+			
+			mawaru_key_st = 88;
+			
+			self:sleep(0.02);
+			self:queuecommand('Update');
+
+		end,
+    UpdateCommand= function(self)
+			
+			--game logic
+			
+			for pn=1,2 do
+				
+				if mawaru_key_lockinput[pn]>0 then
+					mawaru_key_lockinput[pn] = mawaru_key_lockinput[pn]-0.02
+				end
+			
+				local bpn = pn-1;
+				for i=1,4 do
+					
+					----------------------handle button presses-------------------
+					if mawaru_key_lockinput[pn] <= 0 then
+						if mawaru_keys[i+(bpn*4)] == 1 and mawaru_key_held[i+(bpn*4)] == 0 then
+							
+							--Trace(math.abs(GAMESTATE:GetSongBeat()-96));
+							
+							if math.abs(GAMESTATE:GetSongBeat()-96) < mawaru_key_times[_G['mawaru_difficultyP'..pn]+1] then
+								if i==mawaru_key_dir[pn] and mawaru_key_won[pn] == -1 then
+									mawaru_key_won[pn] = 1;
+									_G['mawaru_key_notep'..pn]:stoptweening();
+									_G['mawaru_key_notep'..pn]:zoom(0);
+									MESSAGEMAN:Broadcast('KeyHitP'..pn);
+									if not mawaru_key_soundplayed then
+										mawaru_sound('sounds/key_'..math.random(1,6)..'.ogg');
+										mawaru_key_soundplayed = true;
+									end
+								else
+									mawaru_key_bracketed[pn] = 1;
+									mawaru_key_won[pn] = 0;
+								end
+							end
+							
+							mawaru_key_held[i+(bpn*4)] = 1
+						end
+						
+					end
+					
+					----------------------don't touch this------------------------
+					--release all buttons - used for detecting if a button is newly pressed, as opposed to held
+					if mawaru_keys[i+(bpn*4)] == 0 then
+						mawaru_key_held[i+(bpn*4)] = 0
+					end
+					---------------------end don't touch this----------------------
+					
+				end
+			end
+			
+			if not mawaru_key_decided and GAMESTATE:GetSongBeat()>99 then
+				if mawaru_key_won[1] == 1 then
+					mawaru_gamesP1[1] = 1;
+				end
+				if mawaru_key_won[2] == 1 then
+					mawaru_gamesP2[1] = 1;
+				end
+				MESSAGEMAN:Broadcast('Judge1');
+				mawaru_key_decided = true;
+			end
+			
+			if GAMESTATE:GetSongBeat()>mawaru_key_st-0.05 then
+				if GAMESTATE:GetSongBeat()<mawaru_key_st+1 then
+					MESSAGEMAN:Broadcast('KeyBeatPulse');
+				end
+				mawaru_key_st = mawaru_key_st+1;
+			end
+			
+			if GAMESTATE:GetSongBeat()>92 and not mawaru_key_notespawned then
+				
+				local height = {-32,-64,-256,-400,-800,-1600}
+				local pos = {52*(SCREEN_WIDTH/640),524*(SCREEN_WIDTH/640)}
+				
+				for pn=1,2 do
+					if GAMESTATE:IsPlayerEnabled(pn-1) then
+						local a = _G['mawaru_key_notep'..pn];
+						a:x(pos[pn]);
+						a:rotationz(mawaru_key_rots[mawaru_key_dir[pn]]);
+						a:y(height[_G['mawaru_difficultyP'..pn]+1])
+						--a:y(height[6])
+						a:accelerate(240/130);
+						a:y(408);
+						a:linear(1);
+						a:addy(100);
+					end
+				end
+				
+				mawaru_key_notespawned = true;
+			end
+			
+			self:sleep(0.02);
+			if mawaru_curgame == 1 then
+				self:queuecommand('Update');
+			end
+			
+		end,
+  },
+  Def.Sprite{
+    Name= "actor_tcb",
+    OnCommand= cmd(x,SCREEN_CENTER_X;y,SCREEN_CENTER_Y;zoomto,SCREEN_WIDTH,SCREEN_HEIGHT),
+    Texture= "bg.png",
+  },
+  Def.Sprite{
+    Name= "actor_ucb",
+    --"EffectClock,beat", DiffuseRamp, EffectColor1, EffectColor2, EffectDelay and EffectOffset aren't legit.
+    --"effectclock,'beat'", diffuseramp, effectcolor1, effectcolor2, effect_hold_at_full and effectoffset are legit. -Kid
+    OnCommand= cmd(x,SCREEN_CENTER_X;y,SCREEN_CENTER_Y;zoomto,SCREEN_WIDTH,SCREEN_HEIGHT;
+	effectclock,'beat';diffuseramp;effectcolor1,0.4,0.4,0.4,1;effectcolor2,1,1,1,1,1;effectperiod,0.5;effect_hold_at_full,0.5;effectoffset,0.05),
+    Texture= "lines.png",
+  },
+  Def.Quad{
+    Name= "actor_vcb",
+    KeyBeatPulseMessageCommand= cmd(zoomx,158*(SCREEN_WIDTH/640);linear,0.1;zoomx,158-32),
+    OnCommand= cmd(horizalign,left;zoomto,144,16;x,SCREEN_CENTER_X + -128;y,SCREEN_CENTER_Y + 128;diffuse,color('0,1,0,1')),
+  },
+  Def.Quad{
+    Name= "actor_wcb",
+    KeyBeatPulseMessageCommand= cmd(zoomx,154*(SCREEN_WIDTH/640);linear,0.1;zoomx,154-32),
+    OnCommand= cmd(horizalign,left;zoomto,140,16;x,SCREEN_CENTER_X + -128;y,SCREEN_CENTER_Y + 148;diffuse,color('0,1,0,1')),
+  },
+  Def.Sprite{
+    Name= "actor_xcb",
+    InitCommand= function(self) mawaru_key_notep1 = self end,
+    OnCommand= cmd(x,SCREEN_CENTER_X + 0;y,SCREEN_CENTER_Y + -1240),
+    Texture= "4th 4x4.png",
+  },
+  Def.Sprite{
+    Name= "actor_ycb",
+    InitCommand= function(self) mawaru_key_notep2 = self end,
+    OnCommand= cmd(x,SCREEN_CENTER_X + 0;y,SCREEN_CENTER_Y + -1240),
+    Texture= "4th 4x4.png",
+  },
+  Def.Sprite{
+    Name= "actor_zcb",
+    OnCommand= cmd(x,SCREEN_CENTER_X;y,SCREEN_CENTER_Y;zoomto,SCREEN_WIDTH,SCREEN_HEIGHT),
+    Texture= "upper.png",
+  },
+  Def.Sprite{
+    Name= "actor_Acb",
+    --"EffectClock,beat", DiffuseRamp, EffectColor1, EffectColor2, EffectDelay and EffectOffset aren't legit.
+    --"effectclock,'beat'", diffuseramp, effectcolor1, effectcolor2, effect_hold_at_full and effectoffset are legit. -Kid
+    OnCommand= cmd(blend,"BlendMode_Add";x,SCREEN_CENTER_X;y,SCREEN_CENTER_Y;zoomto,SCREEN_WIDTH,SCREEN_HEIGHT;
+	effectclock,'beat';diffuseramp;effectcolor1,0.4,0.4,0.4,1;effectcolor2,1,1,1,1,1;effectperiod,0.5;effect_hold_at_full,0.5;effectoffset,0.05),
+    Texture= "lines.png",
+  },
+  Def.Sprite{
+    Name= "actor_Bcb",
+    KeyHitP1MessageCommand= cmd(rotationz,mawaru_key_rots[mawaru_key_dir[1]];glow,1,1,1,1;linear,0.3;glow,1,1,1,0;zoom,1.5),
+    OnCommand= cmd(x,52*(SCREEN_WIDTH/640);y,SCREEN_CENTER_Y + 168;diffusealpha,0),
+    Texture= "4th 4x4.png",--These x positions got converted. How about no. -Kid
+  },
+  Def.Sprite{
+    Name= "actor_Ccb",
+    KeyHitP2MessageCommand= cmd(rotationz,mawaru_key_rots[mawaru_key_dir[2]];glow,1,1,1,1;linear,0.3;glow,1,1,1,0;zoom,1.5),
+    OnCommand= cmd(x,524*(SCREEN_WIDTH/640);y,SCREEN_CENTER_Y + 168;diffusealpha,0),
+    Texture= "4th 4x4.png",--These x positions got converted. How about no. -Kid
+  },
+  Def.Quad{
+    Name= "actor_Dcb",
+    InitCommand= function(self) mawaru_key_controller = self end,
+  },
+}

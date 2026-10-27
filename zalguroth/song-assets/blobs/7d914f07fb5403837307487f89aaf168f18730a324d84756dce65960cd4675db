@@ -1,0 +1,529 @@
+<GAME Type="ActorFrame"><children>
+
+	<LAER Type="Quad"
+		InitCommand="%function (self)
+			mawaru_rave_note = {}
+			mawaru_rave_nptr = 1;
+			mawaru_rave_dirs = {90,0,180,-90}
+			
+			mawaru_rave_ret = '';
+			
+			main_dicks_test = 1;
+			
+			function mawaru_rave_nextn()
+				mawaru_rave_nptr = mawaru_rave_nptr+1;
+				if mawaru_rave_nptr > table.getn(mawaru_rave_note) then
+					mawaru_rave_nptr = 1
+				end
+			end
+			
+			mawaru_rave_scale = 0.8;
+			mawaru_rave_speedmod = {1,1,1,1.33,1.66,2};
+			
+			mawaru_rave_axs = {-96,0,0,96};
+			mawaru_rave_ays = {0,96,-96,0};
+			
+			function mawaru_rave_quantize(obj, b)
+				b = b/2;
+				local r = b-math.floor(b)
+				if r == 0 then mawaru_rave_color(obj,4)
+				elseif r == 0.5 then mawaru_rave_color(obj,8)
+				elseif (r > 0.33 and r < 0.34) or (r > 0.66 and r < 0.67) then mawaru_rave_color(obj,12)
+				elseif r == 0.25 or r == 0.75 then mawaru_rave_color(obj,16)
+				elseif (r > 0.166 and r < 0.167) or (r > 0.83 and r < 0.84) then mawaru_rave_color(obj,12)
+				elseif r == 0.125 or r == 0.375 or r == 0.625 or r == 0.875 then mawaru_rave_color(obj,32)
+				else mawaru_rave_color(obj,64) end
+			end
+			
+			function mawaru_rave_color(obj, n)
+				if n == 4 then obj:diffuse(1,0.4,0.3,1); end
+				if n == 8 then obj:diffuse(0.3,0.7,1,1); end
+				if n == 12 then obj:diffuse(1,0.4,1,1); end
+				if n == 16 then obj:diffuse(0.3,1,0.4,1); end
+				if n == 32 then obj:diffuse(1,0.8,0.3,1); end
+				if n == 64 then obj:diffuse(0.3,1,0.7,1); end
+			end
+			
+			function mawaru_rave_placenote(pn,time,dir)
+				
+				local speed = RATEMOD*mawaru_rave_speedmod[_G['mawaru_difficultyP'..pn]+1];
+			
+				local beat = GAMESTATE:GetSongBeat();
+				
+				--Trace('aptr: '..mawaru_rave_nptr)
+				
+				local a = mawaru_rave_note[mawaru_rave_nptr];
+				if not a then return end
+				
+				local b = a.actor;
+				
+				b:hidden(0);
+				b:setstate(0);
+				
+				b:diffusealpha(0);
+				
+				mawaru_rave_quantize(b, time);
+				
+				b:glow(1,1,1,0);
+				b:zoom(0.5)
+				
+				b:x((SCREEN_WIDTH*-0.25)+(pn*SCREEN_CENTER_X)+(mawaru_rave_axs[dir]*mawaru_rave_scale));
+				b:y((SCREEN_CENTER_Y)+(mawaru_rave_ays[dir]*mawaru_rave_scale));
+				b:rotationz(-180);
+				
+				b:linear(0.5*(60/145)/speed);
+				b:diffusealpha(1);
+				b:rotationz(-135);
+				
+				b:linear(1.5*(60/145)/speed);
+				b:rotationz(0);
+				
+				b:sleep(0);
+				b:glow(1,1,1,1);
+				b:decelerate(.2*(60/145)/speed);
+				b:zoom(0.6);
+				b:diffusealpha(0);
+				
+				b:queuecommand('Hide');
+				
+				mawaru_rave_nextn();
+			end
+			
+			--{beat,dir}
+			--x and y are measured in percentage of a screen
+			mawaru_rave_charts = {
+				--novice
+				{
+					{144,1},
+					{148,4},
+					{152,3},
+				},
+				--easy
+				{
+					{142,4},
+					{144,1},
+					{146,2},
+					
+					{150,3},
+					{152,1},
+					{154,4},
+				},
+				--medium
+				{
+					{142,1},
+					{143,4},
+					{144,2},
+					{146,4},
+					{147,1},
+					{148,2},
+					{150,1},
+					{151,4},
+					{152,3},
+					{154,2},
+				},
+				--hard
+				{
+					
+					{140,4},
+					{141,1},
+					{142,3},
+					{142.5,2},
+					{143,4},
+					
+					{144,1},
+					{145,4},
+					{146,3},
+					{146.5,2},
+					{147,1},
+					
+					{148,4},
+					{149,2},
+					{150,3},
+					{150.5,1},
+					{151,4},
+					
+					{152,3},
+					{152.5,2},
+					{153,1},
+					{154,4},
+					{154.5,2},
+					{155,3},
+					
+				},
+				--expert
+				{
+					{140,4},
+					{140.75,2},
+					{141.5,3},
+					{142.25,1},
+					{143,2},
+					{143.5,3},
+					
+					{144,4},
+					{144.75,1},
+					{145.5,3},
+					{146.25,2},
+					{147,4},
+					{147.5,1},
+					
+					{148,2},
+					{148.75,3},
+					{149.5,4},
+					{150.25,1},
+					{151,3},
+					{151.5,2},
+					
+					{152.0,4},
+					{152.5,1},
+					{153.0,3},
+					{154.0,2},
+					{154.5,4},
+					{155.0,1},
+
+				},
+				--slumpage
+				{
+					{140,4,1},
+					{140.25,2,1},
+					{140.75,3,1},
+					{141,1,1},
+					{141.5,4,1},
+					{141.75,3,1},
+					{142.25,2,1},
+					{142.5,1,1},
+					{143,4,1},
+					{143.5,1,1},
+					{144,3,1},
+					{144.25,2,1},
+					{144.75,4,1},
+					{145,1,1},
+					{145.5,2,1},
+					{145.75,3,1},
+					{146.25,4,1},
+					{146.5,1,1},
+					{147,3,1},
+					{147.5,2,1},
+					{148,4,1},
+					{148.25,1,1},
+					{148.75,2,1},
+					{149,3,1},
+					{149.5,4,1},
+					{149.75,1,1},
+					{150.25,3,1},
+					{150.5,2,1},
+					{151,4,1},
+					{151.5,1,1},
+					{152,4,1},
+					{152.5,3,1},
+					{153,4,1},
+					{153.25,2,1},
+					{153.75,4,1},
+					{154,1,1},
+					{154.5,4,1},
+					{154.75,2,1},
+					{155.25,4,1},
+					{155.5,3,1},
+				},
+			}
+			
+			mawaru_rave_curnotep1 = 1;
+			mawaru_rave_curnotep2 = 1;
+			
+		end"
+		StartCommand="%function(self)
+		
+			mawaru_rave_chartp1 = mawaru_rave_charts[mawaru_difficultyP1+1]
+			mawaru_rave_chartp2 = mawaru_rave_charts[mawaru_difficultyP2+1]
+			
+			--variables set up when a game is started
+			--wait 2 seconds (for the curtain or whatever) before accepting any inputs
+			mawaru_rave_lockinput = {2,2};
+			
+			self:sleep(0.02);
+			if mawaru_curgame == 2 then
+				self:queuecommand('Update');
+			end
+
+		end"
+		UpdateCommand="%function(self)
+			
+			--game logic
+			
+			local beat = GAMESTATE:GetSongBeat();
+			
+			for pn=1,2 do
+				
+				if GAMESTATE:IsHumanPlayer(pn-1) then
+					if _G['mawaru_rave_curnotep'..pn]<=table.getn(_G['mawaru_rave_chartp'..pn]) then
+						local c = _G['mawaru_rave_chartp'..pn][_G['mawaru_rave_curnotep'..pn]]
+						if beat>c[1]-(2/mawaru_rave_speedmod[_G['mawaru_difficultyP'..pn]+1]) then
+							if beat<c[1] then
+								--mawaru_rave_placenote(pn,time,dir)
+								mawaru_rave_placenote(pn,c[1],c[2])
+							end
+							_G['mawaru_rave_curnotep'..pn] = _G['mawaru_rave_curnotep'..pn]+1;
+							--Trace('PlaceArrow');
+						end
+					end
+				end
+				
+			end
+			
+			self:sleep(0.02);
+			if mawaru_curgame == 2 then
+				self:queuecommand('Update');
+			end
+			
+		end"
+		KillCommand="%function(self)
+			--any cleanup, if necessary
+		end"
+	/>
+	
+	<LAER Type="Quad" OnCommand="x,SCREEN_CENTER_X;y,SCREEN_CENTER_Y;zoomto,6,SCREEN_HEIGHT;diffuse,1,1,1,1"/>
+	
+	<LAER File="play.png" OnCommand="x,SCREEN_WIDTH*0.25;y,SCREEN_CENTER_Y;zoom,0.8" Condition="GAMESTATE:IsHumanPlayer(0)"/>
+	<LAER File="play.png" OnCommand="x,SCREEN_WIDTH*0.75;y,SCREEN_CENTER_Y;zoom,0.8" Condition="GAMESTATE:IsHumanPlayer(1)"/>
+	
+	<LAER File="note" OnCommand="hidden,1;sleep,0.02;queuecommand,SetMe"
+	SetMeCommand="%function(self) table.insert(mawaru_rave_note,{actor = self,pn = 0,hit = false}) self:aux(table.getn(mawaru_rave_note)) end"
+	HideCommand="%function(self) self:hidden(1); mawaru_rave_note[self:getaux()].pn = 0 end" />
+	<LAER File="note" OnCommand="hidden,1;sleep,0.02;queuecommand,SetMe"
+	SetMeCommand="%function(self) table.insert(mawaru_rave_note,{actor = self,pn = 0,hit = false}) self:aux(table.getn(mawaru_rave_note)) end"
+	HideCommand="%function(self) self:hidden(1); mawaru_rave_note[self:getaux()].pn = 0 end" />
+	<LAER File="note" OnCommand="hidden,1;sleep,0.02;queuecommand,SetMe"
+	SetMeCommand="%function(self) table.insert(mawaru_rave_note,{actor = self,pn = 0,hit = false}) self:aux(table.getn(mawaru_rave_note)) end"
+	HideCommand="%function(self) self:hidden(1); mawaru_rave_note[self:getaux()].pn = 0 end" />
+	<LAER File="note" OnCommand="hidden,1;sleep,0.02;queuecommand,SetMe"
+	SetMeCommand="%function(self) table.insert(mawaru_rave_note,{actor = self,pn = 0,hit = false}) self:aux(table.getn(mawaru_rave_note)) end"
+	HideCommand="%function(self) self:hidden(1); mawaru_rave_note[self:getaux()].pn = 0 end" />
+	<LAER File="note" OnCommand="hidden,1;sleep,0.02;queuecommand,SetMe"
+	SetMeCommand="%function(self) table.insert(mawaru_rave_note,{actor = self,pn = 0,hit = false}) self:aux(table.getn(mawaru_rave_note)) end"
+	HideCommand="%function(self) self:hidden(1); mawaru_rave_note[self:getaux()].pn = 0 end" />
+	<LAER File="note" OnCommand="hidden,1;sleep,0.02;queuecommand,SetMe"
+	SetMeCommand="%function(self) table.insert(mawaru_rave_note,{actor = self,pn = 0,hit = false}) self:aux(table.getn(mawaru_rave_note)) end"
+	HideCommand="%function(self) self:hidden(1); mawaru_rave_note[self:getaux()].pn = 0 end" />
+	<LAER File="note" OnCommand="hidden,1;sleep,0.02;queuecommand,SetMe"
+	SetMeCommand="%function(self) table.insert(mawaru_rave_note,{actor = self,pn = 0,hit = false}) self:aux(table.getn(mawaru_rave_note)) end"
+	HideCommand="%function(self) self:hidden(1); mawaru_rave_note[self:getaux()].pn = 0 end" />
+	<LAER File="note" OnCommand="hidden,1;sleep,0.02;queuecommand,SetMe"
+	SetMeCommand="%function(self) table.insert(mawaru_rave_note,{actor = self,pn = 0,hit = false}) self:aux(table.getn(mawaru_rave_note)) end"
+	HideCommand="%function(self) self:hidden(1); mawaru_rave_note[self:getaux()].pn = 0 end" />
+	<LAER File="note" OnCommand="hidden,1;sleep,0.02;queuecommand,SetMe"
+	SetMeCommand="%function(self) table.insert(mawaru_rave_note,{actor = self,pn = 0,hit = false}) self:aux(table.getn(mawaru_rave_note)) end"
+	HideCommand="%function(self) self:hidden(1); mawaru_rave_note[self:getaux()].pn = 0 end" />
+	<LAER File="note" OnCommand="hidden,1;sleep,0.02;queuecommand,SetMe"
+	SetMeCommand="%function(self) table.insert(mawaru_rave_note,{actor = self,pn = 0,hit = false}) self:aux(table.getn(mawaru_rave_note)) end"
+	HideCommand="%function(self) self:hidden(1); mawaru_rave_note[self:getaux()].pn = 0 end" />
+	<LAER File="note" OnCommand="hidden,1;sleep,0.02;queuecommand,SetMe"
+	SetMeCommand="%function(self) table.insert(mawaru_rave_note,{actor = self,pn = 0,hit = false}) self:aux(table.getn(mawaru_rave_note)) end"
+	HideCommand="%function(self) self:hidden(1); mawaru_rave_note[self:getaux()].pn = 0 end" />
+	<LAER File="note" OnCommand="hidden,1;sleep,0.02;queuecommand,SetMe"
+	SetMeCommand="%function(self) table.insert(mawaru_rave_note,{actor = self,pn = 0,hit = false}) self:aux(table.getn(mawaru_rave_note)) end"
+	HideCommand="%function(self) self:hidden(1); mawaru_rave_note[self:getaux()].pn = 0 end" />
+	<LAER File="note" OnCommand="hidden,1;sleep,0.02;queuecommand,SetMe"
+	SetMeCommand="%function(self) table.insert(mawaru_rave_note,{actor = self,pn = 0,hit = false}) self:aux(table.getn(mawaru_rave_note)) end"
+	HideCommand="%function(self) self:hidden(1); mawaru_rave_note[self:getaux()].pn = 0 end" />
+	<LAER File="note" OnCommand="hidden,1;sleep,0.02;queuecommand,SetMe"
+	SetMeCommand="%function(self) table.insert(mawaru_rave_note,{actor = self,pn = 0,hit = false}) self:aux(table.getn(mawaru_rave_note)) end"
+	HideCommand="%function(self) self:hidden(1); mawaru_rave_note[self:getaux()].pn = 0 end" />
+	<LAER File="note" OnCommand="hidden,1;sleep,0.02;queuecommand,SetMe"
+	SetMeCommand="%function(self) table.insert(mawaru_rave_note,{actor = self,pn = 0,hit = false}) self:aux(table.getn(mawaru_rave_note)) end"
+	HideCommand="%function(self) self:hidden(1); mawaru_rave_note[self:getaux()].pn = 0 end" />
+	<LAER File="note" OnCommand="hidden,1;sleep,0.02;queuecommand,SetMe"
+	SetMeCommand="%function(self) table.insert(mawaru_rave_note,{actor = self,pn = 0,hit = false}) self:aux(table.getn(mawaru_rave_note)) end"
+	HideCommand="%function(self) self:hidden(1); mawaru_rave_note[self:getaux()].pn = 0 end" />
+	<LAER File="note" OnCommand="hidden,1;sleep,0.02;queuecommand,SetMe"
+	SetMeCommand="%function(self) table.insert(mawaru_rave_note,{actor = self,pn = 0,hit = false}) self:aux(table.getn(mawaru_rave_note)) end"
+	HideCommand="%function(self) self:hidden(1); mawaru_rave_note[self:getaux()].pn = 0 end" />
+	<LAER File="note" OnCommand="hidden,1;sleep,0.02;queuecommand,SetMe"
+	SetMeCommand="%function(self) table.insert(mawaru_rave_note,{actor = self,pn = 0,hit = false}) self:aux(table.getn(mawaru_rave_note)) end"
+	HideCommand="%function(self) self:hidden(1); mawaru_rave_note[self:getaux()].pn = 0 end" />
+	<LAER File="note" OnCommand="hidden,1;sleep,0.02;queuecommand,SetMe"
+	SetMeCommand="%function(self) table.insert(mawaru_rave_note,{actor = self,pn = 0,hit = false}) self:aux(table.getn(mawaru_rave_note)) end"
+	HideCommand="%function(self) self:hidden(1); mawaru_rave_note[self:getaux()].pn = 0 end" />
+	<LAER File="note" OnCommand="hidden,1;sleep,0.02;queuecommand,SetMe"
+	SetMeCommand="%function(self) table.insert(mawaru_rave_note,{actor = self,pn = 0,hit = false}) self:aux(table.getn(mawaru_rave_note)) end"
+	HideCommand="%function(self) self:hidden(1); mawaru_rave_note[self:getaux()].pn = 0 end" />
+	<LAER File="note" OnCommand="hidden,1;sleep,0.02;queuecommand,SetMe"
+	SetMeCommand="%function(self) table.insert(mawaru_rave_note,{actor = self,pn = 0,hit = false}) self:aux(table.getn(mawaru_rave_note)) end"
+	HideCommand="%function(self) self:hidden(1); mawaru_rave_note[self:getaux()].pn = 0 end" />
+	<LAER File="note" OnCommand="hidden,1;sleep,0.02;queuecommand,SetMe"
+	SetMeCommand="%function(self) table.insert(mawaru_rave_note,{actor = self,pn = 0,hit = false}) self:aux(table.getn(mawaru_rave_note)) end"
+	HideCommand="%function(self) self:hidden(1); mawaru_rave_note[self:getaux()].pn = 0 end" />
+	<LAER File="note" OnCommand="hidden,1;sleep,0.02;queuecommand,SetMe"
+	SetMeCommand="%function(self) table.insert(mawaru_rave_note,{actor = self,pn = 0,hit = false}) self:aux(table.getn(mawaru_rave_note)) end"
+	HideCommand="%function(self) self:hidden(1); mawaru_rave_note[self:getaux()].pn = 0 end" />
+	<LAER File="note" OnCommand="hidden,1;sleep,0.02;queuecommand,SetMe"
+	SetMeCommand="%function(self) table.insert(mawaru_rave_note,{actor = self,pn = 0,hit = false}) self:aux(table.getn(mawaru_rave_note)) end"
+	HideCommand="%function(self) self:hidden(1); mawaru_rave_note[self:getaux()].pn = 0 end" />
+	<LAER File="note" OnCommand="hidden,1;sleep,0.02;queuecommand,SetMe"
+	SetMeCommand="%function(self) table.insert(mawaru_rave_note,{actor = self,pn = 0,hit = false}) self:aux(table.getn(mawaru_rave_note)) end"
+	HideCommand="%function(self) self:hidden(1); mawaru_rave_note[self:getaux()].pn = 0 end" />
+	<LAER File="note" OnCommand="hidden,1;sleep,0.02;queuecommand,SetMe"
+	SetMeCommand="%function(self) table.insert(mawaru_rave_note,{actor = self,pn = 0,hit = false}) self:aux(table.getn(mawaru_rave_note)) end"
+	HideCommand="%function(self) self:hidden(1); mawaru_rave_note[self:getaux()].pn = 0 end" />
+	<LAER File="note" OnCommand="hidden,1;sleep,0.02;queuecommand,SetMe"
+	SetMeCommand="%function(self) table.insert(mawaru_rave_note,{actor = self,pn = 0,hit = false}) self:aux(table.getn(mawaru_rave_note)) end"
+	HideCommand="%function(self) self:hidden(1); mawaru_rave_note[self:getaux()].pn = 0 end" />
+	<LAER File="note" OnCommand="hidden,1;sleep,0.02;queuecommand,SetMe"
+	SetMeCommand="%function(self) table.insert(mawaru_rave_note,{actor = self,pn = 0,hit = false}) self:aux(table.getn(mawaru_rave_note)) end"
+	HideCommand="%function(self) self:hidden(1); mawaru_rave_note[self:getaux()].pn = 0 end" />
+	<LAER File="note" OnCommand="hidden,1;sleep,0.02;queuecommand,SetMe"
+	SetMeCommand="%function(self) table.insert(mawaru_rave_note,{actor = self,pn = 0,hit = false}) self:aux(table.getn(mawaru_rave_note)) end"
+	HideCommand="%function(self) self:hidden(1); mawaru_rave_note[self:getaux()].pn = 0 end" />
+	<LAER File="note" OnCommand="hidden,1;sleep,0.02;queuecommand,SetMe"
+	SetMeCommand="%function(self) table.insert(mawaru_rave_note,{actor = self,pn = 0,hit = false}) self:aux(table.getn(mawaru_rave_note)) end"
+	HideCommand="%function(self) self:hidden(1); mawaru_rave_note[self:getaux()].pn = 0 end" />
+	<LAER File="note" OnCommand="hidden,1;sleep,0.02;queuecommand,SetMe"
+	SetMeCommand="%function(self) table.insert(mawaru_rave_note,{actor = self,pn = 0,hit = false}) self:aux(table.getn(mawaru_rave_note)) end"
+	HideCommand="%function(self) self:hidden(1); mawaru_rave_note[self:getaux()].pn = 0 end" />
+	<LAER File="note" OnCommand="hidden,1;sleep,0.02;queuecommand,SetMe"
+	SetMeCommand="%function(self) table.insert(mawaru_rave_note,{actor = self,pn = 0,hit = false}) self:aux(table.getn(mawaru_rave_note)) end"
+	HideCommand="%function(self) self:hidden(1); mawaru_rave_note[self:getaux()].pn = 0 end" />
+	<LAER File="note" OnCommand="hidden,1;sleep,0.02;queuecommand,SetMe"
+	SetMeCommand="%function(self) table.insert(mawaru_rave_note,{actor = self,pn = 0,hit = false}) self:aux(table.getn(mawaru_rave_note)) end"
+	HideCommand="%function(self) self:hidden(1); mawaru_rave_note[self:getaux()].pn = 0 end" />
+	<LAER File="note" OnCommand="hidden,1;sleep,0.02;queuecommand,SetMe"
+	SetMeCommand="%function(self) table.insert(mawaru_rave_note,{actor = self,pn = 0,hit = false}) self:aux(table.getn(mawaru_rave_note)) end"
+	HideCommand="%function(self) self:hidden(1); mawaru_rave_note[self:getaux()].pn = 0 end" />
+	<LAER File="note" OnCommand="hidden,1;sleep,0.02;queuecommand,SetMe"
+	SetMeCommand="%function(self) table.insert(mawaru_rave_note,{actor = self,pn = 0,hit = false}) self:aux(table.getn(mawaru_rave_note)) end"
+	HideCommand="%function(self) self:hidden(1); mawaru_rave_note[self:getaux()].pn = 0 end" />
+	<LAER File="note" OnCommand="hidden,1;sleep,0.02;queuecommand,SetMe"
+	SetMeCommand="%function(self) table.insert(mawaru_rave_note,{actor = self,pn = 0,hit = false}) self:aux(table.getn(mawaru_rave_note)) end"
+	HideCommand="%function(self) self:hidden(1); mawaru_rave_note[self:getaux()].pn = 0 end" />
+	<LAER File="note" OnCommand="hidden,1;sleep,0.02;queuecommand,SetMe"
+	SetMeCommand="%function(self) table.insert(mawaru_rave_note,{actor = self,pn = 0,hit = false}) self:aux(table.getn(mawaru_rave_note)) end"
+	HideCommand="%function(self) self:hidden(1); mawaru_rave_note[self:getaux()].pn = 0 end" />
+	<LAER File="note" OnCommand="hidden,1;sleep,0.02;queuecommand,SetMe"
+	SetMeCommand="%function(self) table.insert(mawaru_rave_note,{actor = self,pn = 0,hit = false}) self:aux(table.getn(mawaru_rave_note)) end"
+	HideCommand="%function(self) self:hidden(1); mawaru_rave_note[self:getaux()].pn = 0 end" />
+	<LAER File="note" OnCommand="hidden,1;sleep,0.02;queuecommand,SetMe"
+	SetMeCommand="%function(self) table.insert(mawaru_rave_note,{actor = self,pn = 0,hit = false}) self:aux(table.getn(mawaru_rave_note)) end"
+	HideCommand="%function(self) self:hidden(1); mawaru_rave_note[self:getaux()].pn = 0 end" />
+	<LAER File="note" OnCommand="hidden,1;sleep,0.02;queuecommand,SetMe"
+	SetMeCommand="%function(self) table.insert(mawaru_rave_note,{actor = self,pn = 0,hit = false}) self:aux(table.getn(mawaru_rave_note)) end"
+	HideCommand="%function(self) self:hidden(1); mawaru_rave_note[self:getaux()].pn = 0 end" />
+	<LAER File="note" OnCommand="hidden,1;sleep,0.02;queuecommand,SetMe"
+	SetMeCommand="%function(self) table.insert(mawaru_rave_note,{actor = self,pn = 0,hit = false}) self:aux(table.getn(mawaru_rave_note)) end"
+	HideCommand="%function(self) self:hidden(1); mawaru_rave_note[self:getaux()].pn = 0 end" />
+	<LAER File="note" OnCommand="hidden,1;sleep,0.02;queuecommand,SetMe"
+	SetMeCommand="%function(self) table.insert(mawaru_rave_note,{actor = self,pn = 0,hit = false}) self:aux(table.getn(mawaru_rave_note)) end"
+	HideCommand="%function(self) self:hidden(1); mawaru_rave_note[self:getaux()].pn = 0 end" />
+	<LAER File="note" OnCommand="hidden,1;sleep,0.02;queuecommand,SetMe"
+	SetMeCommand="%function(self) table.insert(mawaru_rave_note,{actor = self,pn = 0,hit = false}) self:aux(table.getn(mawaru_rave_note)) end"
+	HideCommand="%function(self) self:hidden(1); mawaru_rave_note[self:getaux()].pn = 0 end" />
+	<LAER File="note" OnCommand="hidden,1;sleep,0.02;queuecommand,SetMe"
+	SetMeCommand="%function(self) table.insert(mawaru_rave_note,{actor = self,pn = 0,hit = false}) self:aux(table.getn(mawaru_rave_note)) end"
+	HideCommand="%function(self) self:hidden(1); mawaru_rave_note[self:getaux()].pn = 0 end" />
+	<LAER File="note" OnCommand="hidden,1;sleep,0.02;queuecommand,SetMe"
+	SetMeCommand="%function(self) table.insert(mawaru_rave_note,{actor = self,pn = 0,hit = false}) self:aux(table.getn(mawaru_rave_note)) end"
+	HideCommand="%function(self) self:hidden(1); mawaru_rave_note[self:getaux()].pn = 0 end" />
+	<LAER File="note" OnCommand="hidden,1;sleep,0.02;queuecommand,SetMe"
+	SetMeCommand="%function(self) table.insert(mawaru_rave_note,{actor = self,pn = 0,hit = false}) self:aux(table.getn(mawaru_rave_note)) end"
+	HideCommand="%function(self) self:hidden(1); mawaru_rave_note[self:getaux()].pn = 0 end" />
+	<LAER File="note" OnCommand="hidden,1;sleep,0.02;queuecommand,SetMe"
+	SetMeCommand="%function(self) table.insert(mawaru_rave_note,{actor = self,pn = 0,hit = false}) self:aux(table.getn(mawaru_rave_note)) end"
+	HideCommand="%function(self) self:hidden(1); mawaru_rave_note[self:getaux()].pn = 0 end" />
+	<LAER File="note" OnCommand="hidden,1;sleep,0.02;queuecommand,SetMe"
+	SetMeCommand="%function(self) table.insert(mawaru_rave_note,{actor = self,pn = 0,hit = false}) self:aux(table.getn(mawaru_rave_note)) end"
+	HideCommand="%function(self) self:hidden(1); mawaru_rave_note[self:getaux()].pn = 0 end" />
+	<LAER File="note" OnCommand="hidden,1;sleep,0.02;queuecommand,SetMe"
+	SetMeCommand="%function(self) table.insert(mawaru_rave_note,{actor = self,pn = 0,hit = false}) self:aux(table.getn(mawaru_rave_note)) end"
+	HideCommand="%function(self) self:hidden(1); mawaru_rave_note[self:getaux()].pn = 0 end" />
+	<LAER File="note" OnCommand="hidden,1;sleep,0.02;queuecommand,SetMe"
+	SetMeCommand="%function(self) table.insert(mawaru_rave_note,{actor = self,pn = 0,hit = false}) self:aux(table.getn(mawaru_rave_note)) end"
+	HideCommand="%function(self) self:hidden(1); mawaru_rave_note[self:getaux()].pn = 0 end" />
+	<LAER File="note" OnCommand="hidden,1;sleep,0.02;queuecommand,SetMe"
+	SetMeCommand="%function(self) table.insert(mawaru_rave_note,{actor = self,pn = 0,hit = false}) self:aux(table.getn(mawaru_rave_note)) end"
+	HideCommand="%function(self) self:hidden(1); mawaru_rave_note[self:getaux()].pn = 0 end" />
+	<LAER File="note" OnCommand="hidden,1;sleep,0.02;queuecommand,SetMe"
+	SetMeCommand="%function(self) table.insert(mawaru_rave_note,{actor = self,pn = 0,hit = false}) self:aux(table.getn(mawaru_rave_note)) end"
+	HideCommand="%function(self) self:hidden(1); mawaru_rave_note[self:getaux()].pn = 0 end" />
+	<LAER File="note" OnCommand="hidden,1;sleep,0.02;queuecommand,SetMe"
+	SetMeCommand="%function(self) table.insert(mawaru_rave_note,{actor = self,pn = 0,hit = false}) self:aux(table.getn(mawaru_rave_note)) end"
+	HideCommand="%function(self) self:hidden(1); mawaru_rave_note[self:getaux()].pn = 0 end" />
+	<LAER File="note" OnCommand="hidden,1;sleep,0.02;queuecommand,SetMe"
+	SetMeCommand="%function(self) table.insert(mawaru_rave_note,{actor = self,pn = 0,hit = false}) self:aux(table.getn(mawaru_rave_note)) end"
+	HideCommand="%function(self) self:hidden(1); mawaru_rave_note[self:getaux()].pn = 0 end" />
+	<LAER File="note" OnCommand="hidden,1;sleep,0.02;queuecommand,SetMe"
+	SetMeCommand="%function(self) table.insert(mawaru_rave_note,{actor = self,pn = 0,hit = false}) self:aux(table.getn(mawaru_rave_note)) end"
+	HideCommand="%function(self) self:hidden(1); mawaru_rave_note[self:getaux()].pn = 0 end" />
+	<LAER File="note" OnCommand="hidden,1;sleep,0.02;queuecommand,SetMe"
+	SetMeCommand="%function(self) table.insert(mawaru_rave_note,{actor = self,pn = 0,hit = false}) self:aux(table.getn(mawaru_rave_note)) end"
+	HideCommand="%function(self) self:hidden(1); mawaru_rave_note[self:getaux()].pn = 0 end" />
+	<LAER File="note" OnCommand="hidden,1;sleep,0.02;queuecommand,SetMe"
+	SetMeCommand="%function(self) table.insert(mawaru_rave_note,{actor = self,pn = 0,hit = false}) self:aux(table.getn(mawaru_rave_note)) end"
+	HideCommand="%function(self) self:hidden(1); mawaru_rave_note[self:getaux()].pn = 0 end" />
+	<LAER File="note" OnCommand="hidden,1;sleep,0.02;queuecommand,SetMe"
+	SetMeCommand="%function(self) table.insert(mawaru_rave_note,{actor = self,pn = 0,hit = false}) self:aux(table.getn(mawaru_rave_note)) end"
+	HideCommand="%function(self) self:hidden(1); mawaru_rave_note[self:getaux()].pn = 0 end" />
+	<LAER File="note" OnCommand="hidden,1;sleep,0.02;queuecommand,SetMe"
+	SetMeCommand="%function(self) table.insert(mawaru_rave_note,{actor = self,pn = 0,hit = false}) self:aux(table.getn(mawaru_rave_note)) end"
+	HideCommand="%function(self) self:hidden(1); mawaru_rave_note[self:getaux()].pn = 0 end" />
+	<LAER File="note" OnCommand="hidden,1;sleep,0.02;queuecommand,SetMe"
+	SetMeCommand="%function(self) table.insert(mawaru_rave_note,{actor = self,pn = 0,hit = false}) self:aux(table.getn(mawaru_rave_note)) end"
+	HideCommand="%function(self) self:hidden(1); mawaru_rave_note[self:getaux()].pn = 0 end" />
+	<LAER File="note" OnCommand="hidden,1;sleep,0.02;queuecommand,SetMe"
+	SetMeCommand="%function(self) table.insert(mawaru_rave_note,{actor = self,pn = 0,hit = false}) self:aux(table.getn(mawaru_rave_note)) end"
+	HideCommand="%function(self) self:hidden(1); mawaru_rave_note[self:getaux()].pn = 0 end" />
+	<LAER File="note" OnCommand="hidden,1;sleep,0.02;queuecommand,SetMe"
+	SetMeCommand="%function(self) table.insert(mawaru_rave_note,{actor = self,pn = 0,hit = false}) self:aux(table.getn(mawaru_rave_note)) end"
+	HideCommand="%function(self) self:hidden(1); mawaru_rave_note[self:getaux()].pn = 0 end" />
+	<LAER File="note" OnCommand="hidden,1;sleep,0.02;queuecommand,SetMe"
+	SetMeCommand="%function(self) table.insert(mawaru_rave_note,{actor = self,pn = 0,hit = false}) self:aux(table.getn(mawaru_rave_note)) end"
+	HideCommand="%function(self) self:hidden(1); mawaru_rave_note[self:getaux()].pn = 0 end" />
+	<LAER File="note" OnCommand="hidden,1;sleep,0.02;queuecommand,SetMe"
+	SetMeCommand="%function(self) table.insert(mawaru_rave_note,{actor = self,pn = 0,hit = false}) self:aux(table.getn(mawaru_rave_note)) end"
+	HideCommand="%function(self) self:hidden(1); mawaru_rave_note[self:getaux()].pn = 0 end" />
+	
+	<LAER Type="Quad" InitCommand="%function(self) mawaru_rave_controller = self end" />
+	
+	<!--Chart outputter-->
+	<!--HOW2USE:
+	Put this in your xml file anywhere
+	play the section of chart you want from start to finish
+	hit start
+	see the text file that's been output in your song folder
+	-->
+	<!--LAER
+	Type="Quad" OnCommand="hidden,1"
+	InitCommand="%function(self)
+		function simple_round(num)
+			return math.floor(num + 0.5)
+		end
+		lua_chart = ''
+		lua_chart_dir = GAMESTATE:GetCurrentSong():GetSongDir()
+	end"
+	StepCrossed0MessageCommand="%function(self) lua_chart = lua_chart..'{'..((simple_round(GAMESTATE:GetSongBeat()*24))/24)..',1,1},\n'; end"
+	StepCrossed1MessageCommand="%function(self)	lua_chart = lua_chart..'{'..((simple_round(GAMESTATE:GetSongBeat()*24))/24)..',2,1},\n'; end"
+	StepCrossed2MessageCommand="%function(self)	lua_chart = lua_chart..'{'..((simple_round(GAMESTATE:GetSongBeat()*24))/24)..',3,1},\n'; end"
+	StepCrossed3MessageCommand="%function(self)	lua_chart = lua_chart..'{'..((simple_round(GAMESTATE:GetSongBeat()*24))/24)..',4,1},\n'; end"
+	HoldCrossed0MessageCommand="%function(self) lua_chart = lua_chart..'{'..((simple_round(GAMESTATE:GetSongBeat()*24))/24)..',1,2},\n'; end"
+	HoldCrossed1MessageCommand="%function(self)	lua_chart = lua_chart..'{'..((simple_round(GAMESTATE:GetSongBeat()*24))/24)..',2,2},\n'; end"
+	HoldCrossed2MessageCommand="%function(self)	lua_chart = lua_chart..'{'..((simple_round(GAMESTATE:GetSongBeat()*24))/24)..',3,2},\n'; end"
+	HoldCrossed3MessageCommand="%function(self)	lua_chart = lua_chart..'{'..((simple_round(GAMESTATE:GetSongBeat()*24))/24)..',4,2},\n'; end"
+	RollCrossed0MessageCommand="%function(self) lua_chart = lua_chart..'{'..((simple_round(GAMESTATE:GetSongBeat()*24))/24)..',1,4},\n'; end"
+	RollCrossed1MessageCommand="%function(self)	lua_chart = lua_chart..'{'..((simple_round(GAMESTATE:GetSongBeat()*24))/24)..',2,4},\n'; end"
+	RollCrossed2MessageCommand="%function(self)	lua_chart = lua_chart..'{'..((simple_round(GAMESTATE:GetSongBeat()*24))/24)..',3,4},\n'; end"
+	RollCrossed3MessageCommand="%function(self)	lua_chart = lua_chart..'{'..((simple_round(GAMESTATE:GetSongBeat()*24))/24)..',4,4},\n'; end"
+	MineCrossed0MessageCommand="%function(self) lua_chart = lua_chart..'{'..((simple_round(GAMESTATE:GetSongBeat()*24))/24)..',1,M},\n'; end"
+	MineCrossed1MessageCommand="%function(self)	lua_chart = lua_chart..'{'..((simple_round(GAMESTATE:GetSongBeat()*24))/24)..',2,M},\n'; end"
+	MineCrossed2MessageCommand="%function(self)	lua_chart = lua_chart..'{'..((simple_round(GAMESTATE:GetSongBeat()*24))/24)..',3,M},\n'; end"
+	MineCrossed3MessageCommand="%function(self)	lua_chart = lua_chart..'{'..((simple_round(GAMESTATE:GetSongBeat()*24))/24)..',4,M},\n'; end"
+	DisqualifyPlayer1MessageCommand="%function(self)
+		--Trace(string.sub(lua_chart_dir,2));
+		io.output(io.open(string.sub(lua_chart_dir,2)..'LuaChart.txt','w'))
+		io.write(lua_chart);
+		io.close();
+	end"
+	/-->
+	
+	<!--hide one of the players-->
+	<LAER Type="Quad" Condition="not GAMESTATE:IsHumanPlayer(PLAYER_1)"
+	OnCommand="x,SCREEN_WIDTH*0.25;y,SCREEN_CENTER_Y;zoomto,SCREEN_WIDTH/2,SCREEN_HEIGHT;diffuse,0,0,0,1"/>
+	<LAER Type="Quad" Condition="not GAMESTATE:IsHumanPlayer(PLAYER_2)"
+	OnCommand="x,SCREEN_WIDTH*0.75;y,SCREEN_CENTER_Y;zoomto,SCREEN_WIDTH/2,SCREEN_HEIGHT;diffuse,0,0,0,1"/>
+
+</children></GAME>

@@ -1,0 +1,14 @@
+<ActorFrame><children>
+<Layer
+Type="BitmapText"
+File="_eurostile outline"
+Text="DON'T USE THE BAR!!"
+Command="x,SCREEN_CENTER_X;y,SCREEN_CENTER_Y-40;diffusealpha,0;zoom,4;decelerate,0.2;diffusealpha,1;zoom,1.7;wag;effectperiod,0.4;effectmagnitude,0,0,3;sleep,2*(99.46-98.15);accelerate,0.4;y,-530"
+/>
+<Layer
+Type="BitmapText"
+File="_eurostile outline"
+Text="::::OR DOUBLESTEP!!"
+Command="x,SCREEN_CENTER_X;y,SCREEN_CENTER_Y+300;diffusealpha,0;sleep,(99.46-97.85);decelerate,0.2;y,SCREEN_CENTER_Y-40;diffusealpha,1;zoom,2;wag;effectperiod,0.6;effectmagnitude,0,0,-2;sleep,.7;accelerate,0.4;y,530"
+/>
+</children></ActorFrame>

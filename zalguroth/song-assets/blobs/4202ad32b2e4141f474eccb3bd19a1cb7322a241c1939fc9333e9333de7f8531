@@ -1,0 +1,14 @@
+[Sprite]
+Texture=ama 3x2.png
+Frame0000=0
+Delay0000=999
+Frame0001=1
+Delay0001=0.05
+Frame0002=2
+Delay0002=999
+Frame0003=3
+Delay0003=999
+Frame0004=4
+Delay0004=999
+Frame0005=5
+Delay0005=999

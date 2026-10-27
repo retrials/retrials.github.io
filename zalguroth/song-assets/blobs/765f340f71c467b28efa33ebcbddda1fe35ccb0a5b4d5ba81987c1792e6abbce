@@ -1,0 +1,186 @@
+return Def.ActorFrame{
+  Name= "actor_zC",
+  Def.Quad{
+    Name= "actor_AC",
+    InitCommand= function(self)
+		
+			mawaru_breath_obj = {}
+			mawaru_breath_bptr = 1;
+		
+			function mawaru_breath_place(pn,x,y)
+			
+				local b = mawaru_breath_obj[mawaru_breath_bptr];
+				
+				if not b then return end
+				
+				a = b.actor;
+				
+				a:visible(true);
+				a:sleep(0);
+				a:diffusealpha(0);
+				a:rotationz(math.random(0,360));
+				a:zoom(1.2);
+				a:x(x+(SCREEN_CENTER_X*pn));
+				a:y(y);
+				a:linear(0.3);
+				a:diffusealpha(1);
+				a:zoom(1.8);
+				a:linear(1.5);
+				a:diffusealpha(0);
+				a:zoom(0.9);
+				
+				a:queuecommand('Hide');
+			
+				mawaru_breath_bptr = mawaru_breath_bptr+1;
+				if mawaru_breath_bptr > table.getn(mawaru_breath_obj) then
+					mawaru_breath_bptr = 1
+				end
+			end
+			
+		end,
+    KillCommand= function(self)
+			--any cleanup, if necessary
+		end,
+    StartCommand= function(self)
+			
+			mawaru_breathed = 220-.1;
+			
+			self:sleep(0.02);
+			self:queuecommand('Update');
+
+		end,
+    UpdateCommand= function(self)
+			
+			if GAMESTATE:GetSongBeat() > mawaru_breathed and GAMESTATE:GetSongBeat() < 235 then
+				mawaru_breath_pos1 = {x=math.random(0,SCREEN_CENTER_X*0.8)+(SCREEN_CENTER_X*0.1),y=math.random(0,SCREEN_HEIGHT*0.8)+SCREEN_HEIGHT*0.1}
+				mawaru_breath_pos2 = {x=math.random(0,SCREEN_CENTER_X*0.8)+(SCREEN_CENTER_X*0.1),y=math.random(0,SCREEN_HEIGHT*0.8)+SCREEN_HEIGHT*0.1}
+				
+				for pn=0,1 do
+					mawaru_breath_place(pn,mawaru_breath_pos1.x,mawaru_breath_pos1.y)
+					mawaru_breath_place(pn,mawaru_breath_pos2.x,mawaru_breath_pos2.y)
+				end
+				
+				mawaru_breathed = mawaru_breathed+2;
+				
+			end
+			
+			self:sleep(0.02);
+			if mawaru_curgame == 4 then
+				self:queuecommand('Update');
+			end
+			
+		end,
+  },
+  Def.Sprite{
+    Name= "actor_BC",
+    HideCommand= function(self) self:visible(false); mawaru_breath_obj[self:getaux()].pn = 0 end,
+    OnCommand= cmd(visible,false;sleep,0.02;queuecommand,"SetMe"),
+    SetMeCommand= function(self) table.insert(mawaru_breath_obj,{actor = self,pn = 0,hit = false}) self:aux(table.getn(mawaru_breath_obj)) end,
+    Texture= "breath.png",
+  },
+  Def.Sprite{
+    Name= "actor_CC",
+    HideCommand= function(self) self:visible(false); mawaru_breath_obj[self:getaux()].pn = 0 end,
+    OnCommand= cmd(visible,false;sleep,0.02;queuecommand,"SetMe"),
+    SetMeCommand= function(self) table.insert(mawaru_breath_obj,{actor = self,pn = 0,hit = false}) self:aux(table.getn(mawaru_breath_obj)) end,
+    Texture= "breath.png",
+  },
+  Def.Sprite{
+    Name= "actor_DC",
+    HideCommand= function(self) self:visible(false); mawaru_breath_obj[self:getaux()].pn = 0 end,
+    OnCommand= cmd(visible,false;sleep,0.02;queuecommand,"SetMe"),
+    SetMeCommand= function(self) table.insert(mawaru_breath_obj,{actor = self,pn = 0,hit = false}) self:aux(table.getn(mawaru_breath_obj)) end,
+    Texture= "breath.png",
+  },
+  Def.Sprite{
+    Name= "actor_EC",
+    HideCommand= function(self) self:visible(false); mawaru_breath_obj[self:getaux()].pn = 0 end,
+    OnCommand= cmd(visible,false;sleep,0.02;queuecommand,"SetMe"),
+    SetMeCommand= function(self) table.insert(mawaru_breath_obj,{actor = self,pn = 0,hit = false}) self:aux(table.getn(mawaru_breath_obj)) end,
+    Texture= "breath.png",
+  },
+  Def.Sprite{
+    Name= "actor_FC",
+    HideCommand= function(self) self:visible(false); mawaru_breath_obj[self:getaux()].pn = 0 end,
+    OnCommand= cmd(visible,false;sleep,0.02;queuecommand,"SetMe"),
+    SetMeCommand= function(self) table.insert(mawaru_breath_obj,{actor = self,pn = 0,hit = false}) self:aux(table.getn(mawaru_breath_obj)) end,
+    Texture= "breath.png",
+  },
+  Def.Sprite{
+    Name= "actor_aD",
+    HideCommand= function(self) self:visible(false); mawaru_breath_obj[self:getaux()].pn = 0 end,
+    OnCommand= cmd(visible,false;sleep,0.02;queuecommand,"SetMe"),
+    SetMeCommand= function(self) table.insert(mawaru_breath_obj,{actor = self,pn = 0,hit = false}) self:aux(table.getn(mawaru_breath_obj)) end,
+    Texture= "breath.png",
+  },
+  Def.Sprite{
+    Name= "actor_bD",
+    HideCommand= function(self) self:visible(false); mawaru_breath_obj[self:getaux()].pn = 0 end,
+    OnCommand= cmd(visible,false;sleep,0.02;queuecommand,"SetMe"),
+    SetMeCommand= function(self) table.insert(mawaru_breath_obj,{actor = self,pn = 0,hit = false}) self:aux(table.getn(mawaru_breath_obj)) end,
+    Texture= "breath.png",
+  },
+  Def.Sprite{
+    Name= "actor_cD",
+    HideCommand= function(self) self:visible(false); mawaru_breath_obj[self:getaux()].pn = 0 end,
+    OnCommand= cmd(visible,false;sleep,0.02;queuecommand,"SetMe"),
+    SetMeCommand= function(self) table.insert(mawaru_breath_obj,{actor = self,pn = 0,hit = false}) self:aux(table.getn(mawaru_breath_obj)) end,
+    Texture= "breath.png",
+  },
+  Def.Sprite{
+    Name= "actor_dD",
+    HideCommand= function(self) self:visible(false); mawaru_breath_obj[self:getaux()].pn = 0 end,
+    OnCommand= cmd(visible,false;sleep,0.02;queuecommand,"SetMe"),
+    SetMeCommand= function(self) table.insert(mawaru_breath_obj,{actor = self,pn = 0,hit = false}) self:aux(table.getn(mawaru_breath_obj)) end,
+    Texture= "breath.png",
+  },
+  Def.Sprite{
+    Name= "actor_eD",
+    HideCommand= function(self) self:visible(false); mawaru_breath_obj[self:getaux()].pn = 0 end,
+    OnCommand= cmd(visible,false;sleep,0.02;queuecommand,"SetMe"),
+    SetMeCommand= function(self) table.insert(mawaru_breath_obj,{actor = self,pn = 0,hit = false}) self:aux(table.getn(mawaru_breath_obj)) end,
+    Texture= "breath.png",
+  },
+  Def.Sprite{
+    Name= "actor_fD",
+    HideCommand= function(self) self:visible(false); mawaru_breath_obj[self:getaux()].pn = 0 end,
+    OnCommand= cmd(visible,false;sleep,0.02;queuecommand,"SetMe"),
+    SetMeCommand= function(self) table.insert(mawaru_breath_obj,{actor = self,pn = 0,hit = false}) self:aux(table.getn(mawaru_breath_obj)) end,
+    Texture= "breath.png",
+  },
+  Def.Sprite{
+    Name= "actor_gD",
+    HideCommand= function(self) self:visible(false); mawaru_breath_obj[self:getaux()].pn = 0 end,
+    OnCommand= cmd(visible,false;sleep,0.02;queuecommand,"SetMe"),
+    SetMeCommand= function(self) table.insert(mawaru_breath_obj,{actor = self,pn = 0,hit = false}) self:aux(table.getn(mawaru_breath_obj)) end,
+    Texture= "breath.png",
+  },
+  Def.Sprite{
+    Name= "actor_hD",
+    HideCommand= function(self) self:visible(false); mawaru_breath_obj[self:getaux()].pn = 0 end,
+    OnCommand= cmd(visible,false;sleep,0.02;queuecommand,"SetMe"),
+    SetMeCommand= function(self) table.insert(mawaru_breath_obj,{actor = self,pn = 0,hit = false}) self:aux(table.getn(mawaru_breath_obj)) end,
+    Texture= "breath.png",
+  },
+  Def.Sprite{
+    Name= "actor_iD",
+    HideCommand= function(self) self:visible(false); mawaru_breath_obj[self:getaux()].pn = 0 end,
+    OnCommand= cmd(visible,false;sleep,0.02;queuecommand,"SetMe"),
+    SetMeCommand= function(self) table.insert(mawaru_breath_obj,{actor = self,pn = 0,hit = false}) self:aux(table.getn(mawaru_breath_obj)) end,
+    Texture= "breath.png",
+  },
+  Def.Sprite{
+    Name= "actor_jD",
+    HideCommand= function(self) self:visible(false); mawaru_breath_obj[self:getaux()].pn = 0 end,
+    OnCommand= cmd(visible,false;sleep,0.02;queuecommand,"SetMe"),
+    SetMeCommand= function(self) table.insert(mawaru_breath_obj,{actor = self,pn = 0,hit = false}) self:aux(table.getn(mawaru_breath_obj)) end,
+    Texture= "breath.png",
+  },
+  Def.Sprite{
+    Name= "actor_kD",
+    HideCommand= function(self) self:visible(false); mawaru_breath_obj[self:getaux()].pn = 0 end,
+    OnCommand= cmd(visible,false;sleep,0.02;queuecommand,"SetMe"),
+    SetMeCommand= function(self) table.insert(mawaru_breath_obj,{actor = self,pn = 0,hit = false}) self:aux(table.getn(mawaru_breath_obj)) end,
+    Texture= "breath.png",
+  },
+}

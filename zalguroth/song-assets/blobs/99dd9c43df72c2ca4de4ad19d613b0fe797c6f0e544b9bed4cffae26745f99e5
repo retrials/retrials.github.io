@@ -1,0 +1,31 @@
+<ActorFrame> <children>
+	<Layer
+		Type="Quad"
+		OnCommand="stretchto,SCREEN_LEFT,SCREEN_TOP,SCREEN_RIGHT,SCREEN_BOTTOM;diffuse,#FFFFFF;diffusealpha,1;"
+	/>
+	<Layer
+		File="img"
+		OnCommand="x,SCREEN_CENTER_X;y,SCREEN_CENTER_Y;zoom,0;decelerate,0.3;zoom,1.3;"
+		Condition="GAMESTATE:GetCurrentSteps(PLAYER_1):GetDifficulty()>=2 and not GAMESTATE:IsHumanPlayer(1) or GAMESTATE:GetCurrentSteps(PLAYER_2):GetDifficulty()>=2 and not GAMESTATE:IsHumanPlayer(0) or GAMESTATE:GetCurrentSteps(PLAYER_1):GetDifficulty()>=2 and GAMESTATE:GetCurrentSteps(PLAYER_2):GetDifficulty()>=2 or GAMESTATE:GetCurrentSteps(PLAYER_1):GetDifficulty()<2 and not GAMESTATE:IsHumanPlayer(1) or GAMESTATE:GetCurrentSteps(PLAYER_2):GetDifficulty()<2 and not GAMESTATE:IsHumanPlayer(0) or GAMESTATE:GetCurrentSteps(PLAYER_1):GetDifficulty()<2 and GAMESTATE:GetCurrentSteps(PLAYER_2):GetDifficulty()<2"
+	/>
+	<Layer
+		File="img"
+		OnCommand="x,SCREEN_CENTER_X-160;y,SCREEN_CENTER_Y;zoom,0;decelerate,0.3;zoom,1.3;"
+		Condition="GAMESTATE:GetCurrentSteps(PLAYER_1):GetDifficulty()>=2 and GAMESTATE:GetCurrentSteps(PLAYER_2):GetDifficulty()<2"
+	/>
+	<Layer
+		File="ayaze"
+		OnCommand="x,SCREEN_CENTER_X+160;y,SCREEN_CENTER_Y;zoom,0;decelerate,0.3;zoom,1.3;"
+		Condition="GAMESTATE:GetCurrentSteps(PLAYER_1):GetDifficulty()>=2 and GAMESTATE:GetCurrentSteps(PLAYER_2):GetDifficulty()<2"
+	/>
+	<Layer
+		File="img"
+		OnCommand="x,SCREEN_CENTER_X+160;y,SCREEN_CENTER_Y;zoom,0;decelerate,0.3;zoom,1.3;"
+		Condition="GAMESTATE:GetCurrentSteps(PLAYER_1):GetDifficulty()<2 and GAMESTATE:GetCurrentSteps(PLAYER_2):GetDifficulty()>=2"
+	/>
+	<Layer
+		File="ayaze"
+		OnCommand="x,SCREEN_CENTER_X-160;y,SCREEN_CENTER_Y;zoom,0;decelerate,0.3;zoom,1.3;"
+		Condition="GAMESTATE:GetCurrentSteps(PLAYER_1):GetDifficulty()<2 and GAMESTATE:GetCurrentSteps(PLAYER_2):GetDifficulty()>=2"
+	/>
+</children> </ActorFrame>

@@ -1,0 +1,6 @@
+[Sprite]
+Texture=dude 4x2.png
+Frame0000=5
+Delay0000=0.125
+Frame0001=6
+Delay0001=0.125

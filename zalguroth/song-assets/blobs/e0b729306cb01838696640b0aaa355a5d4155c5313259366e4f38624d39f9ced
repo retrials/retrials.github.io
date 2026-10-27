@@ -1,0 +1,75 @@
+local function diff_to_number(difficult)--Low-grade code for compatibility reasons. -Kid
+    if not difficult then return
+    elseif difficult == 'Difficulty_Beginner' then return 0
+    elseif difficult == 'Difficulty_Easy' then return 1
+    elseif difficult == 'Difficulty_Medium' then return 2
+    elseif difficult == 'Difficulty_Hard' then return 3
+    elseif difficult == 'Difficulty_Challenge' then return 4
+    elseif difficult == 'Difficulty_Edit' then return 5
+    end
+end
+P1Steps = diff_to_number(GAMESTATE:GetCurrentSteps(PLAYER_1):GetDifficulty())--This makes things simpler. -Kid
+P2Steps = diff_to_number(GAMESTATE:GetCurrentSteps(PLAYER_2):GetDifficulty())
+local cond_bc_result= P1Steps<4 and P2Steps>=4
+
+local cond_Fb_result= P1Steps<4 and not GAMESTATE:IsHumanPlayer(1) or P2Steps<4 and not GAMESTATE:IsHumanPlayer(0) or P1Steps<4 and P2Steps<4
+
+local cond_ac_result= P1Steps>=4 and P2Steps<4
+
+local cond_Eb_result= P1Steps>=4 and not GAMESTATE:IsHumanPlayer(1) or P2Steps>=4 and not GAMESTATE:IsHumanPlayer(0) or P1Steps>=4 and P2Steps>=4
+
+--Due to GetDifficulty returning an enum and not a number:
+--GetDifficulty()<4 becomes GetDifficulty()== ('Difficulty_Beginner' or 'Difficulty_Easy' or 'Difficulty_Medium' or 'Difficulty_Hard'). -Kid
+--GetDifficulty()>=4 becomes GetDifficulty()== ('Difficulty_Challenge' or 'Difficulty_Edit'). -Kid
+local function optional_actor(cond, actor)
+	if cond then return actor end
+	return Def.Actor{}
+end
+
+return Def.ActorFrame{
+  Name= "actor_cc",
+  --For all CommandCommand, become OnCommand instead. -Kid
+      --For all '::', replace with '\n' instead. -Kid
+  optional_actor(cond_Eb_result,
+  Def.BitmapText{
+    Name= "actor_dc",
+    OnCommand= cmd(x,SCREEN_CENTER_X;y,SCREEN_CENTER_Y-30;diffusealpha,0;zoom,4;decelerate,0.2;diffusealpha,1;zoom,2;wag;effectperiod,0.4;effectmagnitude,0,0,3;sleep,.8;accelerate,0.5;y,SCREEN_CENTER_Y + 290),
+    Font= "_eurostile outline",
+    Text= "RAISIN STYLE!!",
+  }),
+  optional_actor(cond_Fb_result,
+  Def.BitmapText{
+    Name= "actor_ec",
+    OnCommand= cmd(x,SCREEN_CENTER_X;y,SCREEN_CENTER_Y-30;diffusealpha,0;zoom,4;decelerate,0.2;diffusealpha,1;zoom,2;wag;effectperiod,0.4;effectmagnitude,0,0,3;sleep,.8;accelerate,0.5;y,SCREEN_CENTER_Y + 290),
+    Font= "_eurostile outline",
+    Text= "V FOR\nEXTREME!!",
+  }),
+  optional_actor(cond_ac_result,
+  Def.BitmapText{
+    Name= "actor_fc",
+    OnCommand= cmd(x,SCREEN_CENTER_X-160;y,SCREEN_CENTER_Y-30;diffusealpha,0;zoom,4;decelerate,0.2;diffusealpha,1;zoom,1.2;wag;effectperiod,0.4;effectmagnitude,0,0,3;sleep,.8;accelerate,0.5;x,SCREEN_CENTER_X + -1320),
+    Font= "_eurostile outline",
+    Text= "RAISIN STYLE!!",
+  }),
+  optional_actor(cond_ac_result,
+  Def.BitmapText{
+    Name= "actor_gc",
+    OnCommand= cmd(x,SCREEN_CENTER_X+160;y,SCREEN_CENTER_Y-30;diffusealpha,0;zoom,4;decelerate,0.2;diffusealpha,1;zoom,1.2;wag;effectperiod,0.4;effectmagnitude,0,0,3;sleep,.8;accelerate,0.5;x,SCREEN_CENTER_X + 680),
+    Font= "_eurostile outline",
+    Text= "Laugh at\nPlayer 1!!",
+  }),
+  optional_actor(cond_bc_result,
+  Def.BitmapText{
+    Name= "actor_hc",
+    OnCommand= cmd(x,SCREEN_CENTER_X-160;y,SCREEN_CENTER_Y-30;diffusealpha,0;zoom,4;decelerate,0.2;diffusealpha,1;zoom,1.2;wag;effectperiod,0.4;effectmagnitude,0,0,3;sleep,.8;accelerate,0.5;x,SCREEN_CENTER_X + -1320),
+    Font= "_eurostile outline",
+    Text= "Laugh at\nPlayer 2!!",
+  }),
+  optional_actor(cond_bc_result,
+  Def.BitmapText{
+    Name= "actor_ic",
+    OnCommand= cmd(x,SCREEN_CENTER_X+160;y,SCREEN_CENTER_Y-30;diffusealpha,0;zoom,4;decelerate,0.2;diffusealpha,1;zoom,1.2;wag;effectperiod,0.4;effectmagnitude,0,0,3;sleep,.8;accelerate,0.5;x,SCREEN_CENTER_X + 680),
+    Font= "_eurostile outline",
+    Text= "RAISIN STYLE!!",
+  }),
+}

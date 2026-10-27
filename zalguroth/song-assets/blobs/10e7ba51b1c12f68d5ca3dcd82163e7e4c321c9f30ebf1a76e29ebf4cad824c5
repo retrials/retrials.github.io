@@ -1,0 +1,44 @@
+<ActorFrame><children>
+<Layer
+Type="BitmapText"
+File="_eurostile outline"
+Text="FOOTSWITCH!!"
+Command="x,SCREEN_CENTER_X;y,SCREEN_CENTER_Y-50;diffusealpha,0;zoom,4;decelerate,0.1;diffusealpha,1;zoom,2;wag;effectperiod,0.4;effectmagnitude,0,0,3;sleep,.68;accelerate,0.3;y,530"
+Condition="GAMESTATE:GetCurrentSteps(PLAYER_1):GetDifficulty()>=3 and not GAMESTATE:IsHumanPlayer(1) or GAMESTATE:GetCurrentSteps(PLAYER_2):GetDifficulty()>=3 and not GAMESTATE:IsHumanPlayer(0) or GAMESTATE:GetCurrentSteps(PLAYER_1):GetDifficulty()>=3 and GAMESTATE:GetCurrentSteps(PLAYER_2):GetDifficulty()>=3"
+/>
+<Layer
+Type="BitmapText"
+File="_eurostile outline"
+Text="WALKING::CROSS!!"
+Command="x,SCREEN_CENTER_X;y,SCREEN_CENTER_Y-50;diffusealpha,0;zoom,4;decelerate,0.1;diffusealpha,1;zoom,2;wag;effectperiod,0.4;effectmagnitude,0,0,3;sleep,.68;accelerate,0.3;y,530"
+Condition="GAMESTATE:GetCurrentSteps(PLAYER_1):GetDifficulty()<3 and not GAMESTATE:IsHumanPlayer(1) or GAMESTATE:GetCurrentSteps(PLAYER_2):GetDifficulty()<3 and not GAMESTATE:IsHumanPlayer(0) or GAMESTATE:GetCurrentSteps(PLAYER_1):GetDifficulty()<3 and GAMESTATE:GetCurrentSteps(PLAYER_2):GetDifficulty()<3"
+/>
+<Layer
+Type="BitmapText"
+File="_eurostile outline"
+Text="FOOTSWITCH!!"
+Command="x,SCREEN_CENTER_X-160;y,SCREEN_CENTER_Y-30;diffusealpha,0;zoom,4;decelerate,0.2;diffusealpha,1;zoom,1.2;wag;effectperiod,0.4;effectmagnitude,0,0,3;sleep,.75;accelerate,0.3;x,-1000"
+Condition="GAMESTATE:GetCurrentSteps(PLAYER_1):GetDifficulty()>=3 and GAMESTATE:GetCurrentSteps(PLAYER_2):GetDifficulty()<3"
+/>
+<Layer
+Type="BitmapText"
+File="_eurostile outline"
+Text="Laugh at::Player 1!!"
+Command="x,SCREEN_CENTER_X+160;y,SCREEN_CENTER_Y-30;diffusealpha,0;zoom,4;decelerate,0.2;diffusealpha,1;zoom,1.2;wag;effectperiod,0.4;effectmagnitude,0,0,3;sleep,.75;accelerate,0.3;x,1000"
+Condition="GAMESTATE:GetCurrentSteps(PLAYER_1):GetDifficulty()>=3 and GAMESTATE:GetCurrentSteps(PLAYER_2):GetDifficulty()<3"
+/>
+<Layer
+Type="BitmapText"
+File="_eurostile outline"
+Text="Laugh at::Player 2!!"
+Command="x,SCREEN_CENTER_X-160;y,SCREEN_CENTER_Y-30;diffusealpha,0;zoom,4;decelerate,0.2;diffusealpha,1;zoom,1.2;wag;effectperiod,0.4;effectmagnitude,0,0,3;sleep,.75;accelerate,0.3;x,-1000"
+Condition="GAMESTATE:GetCurrentSteps(PLAYER_1):GetDifficulty()<3 and GAMESTATE:GetCurrentSteps(PLAYER_2):GetDifficulty()>=3"
+/>
+<Layer
+Type="BitmapText"
+File="_eurostile outline"
+Text="FOOTSWITCH!!"
+Command="x,SCREEN_CENTER_X+160;y,SCREEN_CENTER_Y-30;diffusealpha,0;zoom,4;decelerate,0.2;diffusealpha,1;zoom,1.2;wag;effectperiod,0.4;effectmagnitude,0,0,3;sleep,.75;accelerate,0.3;x,1000"
+Condition="GAMESTATE:GetCurrentSteps(PLAYER_1):GetDifficulty()<3 and GAMESTATE:GetCurrentSteps(PLAYER_2):GetDifficulty()>=3"
+/>
+</children></ActorFrame>

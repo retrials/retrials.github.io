@@ -1,0 +1,261 @@
+<GAME Type="ActorFrame"><children>
+
+	<LAER Type="Quad"
+		InitCommand="%function(self)
+		
+			--for storing if a button is held down
+			mawaru_run_held = {0,0,0,0,0,0,0,0};
+			
+			mawaru_run_players = {};
+			mawaru_run_boss = {};
+			
+			mawaru_run_top = 112;
+			mawaru_run_bottom = SCREEN_BOTTOM-20;
+			mawaru_run_left = 50;
+			mawaru_run_right = SCREEN_CENTER_X-50;
+			
+			mawaru_kill_range = 20;
+			
+			function mawaru_run_updateplayers()
+				for pn = 1,2 do
+					if GAMESTATE:IsHumanPlayer(pn-1) then
+						mawaru_run_players[pn].actor:x(mawaru_run_players[pn].x);
+						mawaru_run_players[pn].actor:y(mawaru_run_players[pn].y);
+						mawaru_run_players[pn].actor:z(mawaru_run_players[pn].y*0.05);
+						if mawaru_run_players[pn].running then
+							mawaru_run_players[pn].actor:hidden(0);
+							mawaru_run_players[pn].actor:animate(1);
+							mawaru_run_players[pn].deadactor:hidden(1);
+						elseif not mawaru_run_players[pn].dead then
+							mawaru_run_players[pn].actor:hidden(0);
+							mawaru_run_players[pn].actor:setstate(0);
+							mawaru_run_players[pn].actor:animate(0);
+							mawaru_run_players[pn].deadactor:hidden(1);
+						else
+							mawaru_run_players[pn].actor:hidden(1);
+							mawaru_run_players[pn].deadactor:hidden(0);
+						end
+						
+						local xspd = mawaru_run_boss[pn].speed*-math.sin(mawaru_angle(mawaru_run_players[pn].actor,mawaru_run_boss[pn].actor))
+						local yspd = mawaru_run_boss[pn].speed*-math.cos(mawaru_angle(mawaru_run_players[pn].actor,mawaru_run_boss[pn].actor))
+						
+						if not mawaru_run_players[pn].dead and GAMESTATE:GetSongBeat()<475 then
+							mawaru_run_boss[pn].x = mawaru_run_boss[pn].x+xspd
+							mawaru_run_boss[pn].y = mawaru_run_boss[pn].y+yspd
+							
+							mawaru_run_boss[pn].actor:x(mawaru_run_boss[pn].x);
+							mawaru_run_boss[pn].actor:y(mawaru_run_boss[pn].y);
+							mawaru_run_boss[pn].actor:z(mawaru_run_boss[pn].y*0.05);
+							
+							if xspd<-0.2 then
+								mawaru_run_boss[pn].actor:zoomx(mawaru_run_boss[pn].zoomx)
+							elseif xspd>0.2 then
+								mawaru_run_boss[pn].actor:zoomx(mawaru_run_boss[pn].zoomx*-1)
+							end
+						end
+						
+						if not mawaru_run_players[pn].dead then
+							--mawaru_dist(a,b)
+							local distx = math.abs(mawaru_run_players[pn].x-mawaru_run_boss[pn].x);
+							local disty = math.abs(mawaru_run_players[pn].y-mawaru_run_boss[pn].y);
+							if distx < mawaru_kill_range*2 and disty < mawaru_kill_range and GAMESTATE:GetSongBeat()<475 then
+								mawaru_run_players[pn].deadactor:x(mawaru_run_players[pn].x);
+								mawaru_run_players[pn].deadactor:y(mawaru_run_players[pn].y);
+								mawaru_run_players[pn].deadactor:z(mawaru_run_players[pn].y*0.05);
+								mawaru_run_players[pn].deadactor:zoomx(mawaru_run_players[pn].actor:GetZoomX());
+								mawaru_run_players[pn].dead = true;
+								mawaru_run_players[pn].running = false;
+								mawaru_sound('sounds/wow.ogg');
+								MESSAGEMAN:Broadcast('RunDieP'..pn);
+							end
+						end
+						
+					end
+				end
+			end
+			
+		end"
+		StartCommand="%function(self)
+			
+			--variables set up when a game is started
+			--wait 2 seconds (for the curtain or whatever) before accepting any inputs
+			mawaru_run_lockinput = {2,2};
+			
+			mawaru_run_bossspeeds = {
+				{0.3,0.3,0.3,0.3,0.6,0.9},
+				{1,1.2,1.4,1.7,2,2.2},
+				{0.006,0.006,0.006,0.006,0.006,0.006},
+			}
+			
+			mawaru_run_speed = 2.5;
+			
+			--[[
+			mawaru_run_bossinitspeed = 0.3;
+			mawaru_run_bossmaxspeed = 1.7;
+			mawaru_run_bossaccel = 0.006;
+			]]
+			
+			for pn = 1,2 do
+				if mawaru_run_players[pn] then
+					mawaru_run_players[pn].x = SCREEN_WIDTH*0.25;
+					mawaru_run_players[pn].y = SCREEN_HEIGHT*0.9;
+					mawaru_run_players[pn].running = false;
+					mawaru_run_players[pn].dead = false;
+					
+					mawaru_run_boss[pn].x = SCREEN_WIDTH*0.25;
+					mawaru_run_boss[pn].y = SCREEN_HEIGHT*0.4;
+					mawaru_run_boss[pn].speed = mawaru_run_bossspeeds[1][_G['mawaru_difficultyP'..pn]+1];
+				end
+			end
+			
+			mawaru_run_updateplayers();
+			
+			self:sleep(0.02);
+			self:queuecommand('Update');
+
+		end"
+		UpdateCommand="%function(self)
+			
+			--game logic
+			
+			for pn=1,2 do
+			
+				if mawaru_run_players[pn] then
+				
+					if mawaru_run_lockinput[pn]>0 then
+						mawaru_run_lockinput[pn] = mawaru_run_lockinput[pn]-0.02
+					end
+				
+					local bpn = pn-1;
+						
+					----------------------handle button presses-------------------
+					if GAMESTATE:GetSongBeat()>453 and not mawaru_run_players[pn].dead and GAMESTATE:GetSongBeat()<475 then
+						
+						--oooo she's gaining on uuuu
+						if mawaru_run_boss[pn].speed < mawaru_run_bossspeeds[2][_G['mawaru_difficultyP'..pn]+1] then
+							mawaru_run_boss[pn].speed = mawaru_run_boss[pn].speed+mawaru_run_bossspeeds[3][_G['mawaru_difficultyP'..pn]+1];
+						end
+						
+						local movingx = 0;
+						local movingy = 0;
+						
+						if mawaru_keys[1+(bpn*4)] == 1 then
+							mawaru_run_players[pn].x = mawaru_run_players[pn].x-mawaru_run_speed;
+							movingx = movingx-1;
+						end
+						if mawaru_keys[2+(bpn*4)] == 1 then
+							mawaru_run_players[pn].y = mawaru_run_players[pn].y+mawaru_run_speed;
+							movingy = movingy+1;
+						end
+						if mawaru_keys[3+(bpn*4)] == 1 then
+							mawaru_run_players[pn].y = mawaru_run_players[pn].y-mawaru_run_speed;
+							movingy = movingy-1;
+						end
+						if mawaru_keys[4+(bpn*4)] == 1 then
+							mawaru_run_players[pn].x = mawaru_run_players[pn].x+mawaru_run_speed;
+							movingx = movingx+1;
+						end
+						
+						if mawaru_run_players[pn].x > mawaru_run_right then
+							mawaru_run_players[pn].x = mawaru_run_right
+						end
+						if mawaru_run_players[pn].x < mawaru_run_left then
+							mawaru_run_players[pn].x = mawaru_run_left
+						end
+						if mawaru_run_players[pn].y > mawaru_run_bottom then
+							mawaru_run_players[pn].y = mawaru_run_bottom
+						end
+						if mawaru_run_players[pn].y < mawaru_run_top then
+							mawaru_run_players[pn].y = mawaru_run_top
+						end
+						
+						if mawaru_run_boss[pn].x > mawaru_run_right-20 then
+							mawaru_run_boss[pn].x = mawaru_run_right-20
+						end
+						if mawaru_run_boss[pn].x < mawaru_run_left+20 then
+							mawaru_run_boss[pn].x = mawaru_run_left+20
+						end
+						if mawaru_run_boss[pn].y > mawaru_run_bottom-10 then
+							mawaru_run_boss[pn].y = mawaru_run_bottom-10
+						end
+						if mawaru_run_boss[pn].y < mawaru_run_top+40 then
+							mawaru_run_boss[pn].y = mawaru_run_top+40
+						end
+						
+						if math.abs(movingx) > 0 or math.abs(movingy) > 0 then
+							mawaru_run_players[pn].running = true;
+						else
+							mawaru_run_players[pn].running = false;
+						end
+						
+						if movingx>0 then
+							mawaru_run_players[pn].actor:zoomx(1);
+						elseif movingx<0 then
+							mawaru_run_players[pn].actor:zoomx(-1);
+						end
+						
+					else
+						mawaru_run_players[pn].running = false;
+					end
+				
+				end
+					
+			end
+			
+			mawaru_run_updateplayers();
+			
+			self:sleep(0.02);
+			if mawaru_curgame == 10 then
+				self:queuecommand('Update');
+			end
+			
+		end"
+		KillCommand="%function(self)
+			--any cleanup, if necessary
+		end"
+	/>
+	
+	<!--background-->
+	<LAER Type="Quad" OnCommand="x,SCREEN_CENTER_X;y,SCREEN_CENTER_Y;zoomto,SCREEN_WIDTH,SCREEN_HEIGHT;diffuse,1,1,1,1"/>
+	
+	<LAER Type="ActorFrame" InitCommand="%function(self) self:SetDrawByZPosition(true) end" ><children>
+	
+		<LAER File="laer.sprite" OnCommand="vertalign,bottom;zoom,0.6;sleep,0.02;queuecommand,SetMe"
+		SetMeCommand="%function(self) mawaru_run_boss[1] = {actor=self,x=0,y=0,speed=0,zoomx=0.6} end" />
+	
+		<LAER File="taro.sprite" OnCommand="vertalign,bottom;sleep,0.02;queuecommand,SetMe"
+		SetMeCommand="%function(self) mawaru_run_players[1] = {actor=self,x=0,y=0,running=false,dead=false} end" />
+		<LAER File="_taro 3x1" OnCommand="vertalign,bottom;hidden,1;animate,0;setstate,2;sleep,0.02;queuecommand,SetMe"
+		SetMeCommand="%function(self) mawaru_run_players[1].deadactor = self end" />
+		
+	</children></LAER>
+	
+	<LAER Type="ActorFrame" InitCommand="%function(self) self:SetDrawByZPosition(true) end" OnCommand="x,320;"><children>
+		
+		<LAER File="orne.sprite" OnCommand="vertalign,bottom;zoom,0.9;sleep,0.02;queuecommand,SetMe"
+		SetMeCommand="%function(self) mawaru_run_boss[2] = {actor=self,x=0,y=0,speed=0,zoomx=0.9} end" />
+		
+		<LAER File="pit.sprite" OnCommand="vertalign,bottom;sleep,0.02;queuecommand,SetMe"
+		SetMeCommand="%function(self) mawaru_run_players[2] = {actor=self,x=0,y=0,running=false,dead=false} end" />
+		<LAER File="_pit 3x1" OnCommand="vertalign,bottom;hidden,1;animate,0;setstate,2;sleep,0.02;queuecommand,SetMe"
+		SetMeCommand="%function(self) mawaru_run_players[2].deadactor = self end" />
+		
+	</children></LAER>
+	
+	<LAER File="toobad" OnCommand="x,SCREEN_WIDTH*0.25;y,-80"
+	RunDieP1MessageCommand="bounceend,0.3;y,SCREEN_HEIGHT*0.4" />
+	<LAER File="toobad" OnCommand="x,SCREEN_WIDTH*0.75;y,-80"
+	RunDieP2MessageCommand="bounceend,0.3;y,SCREEN_HEIGHT*0.4" />
+	
+	<!--div line-->
+	<LAER Type="Quad" OnCommand="x,SCREEN_CENTER_X;y,SCREEN_CENTER_Y;zoomto,6,SCREEN_HEIGHT;diffuse,0,0,0,1"/>
+	
+	<!--hide one of the players-->
+	<LAER Type="Quad" Condition="not GAMESTATE:IsHumanPlayer(PLAYER_1)"
+	OnCommand="x,SCREEN_WIDTH*0.25;y,SCREEN_CENTER_Y;zoomto,SCREEN_WIDTH/2,SCREEN_HEIGHT;diffuse,0,0,0,1"/>
+	<LAER Type="Quad" Condition="not GAMESTATE:IsHumanPlayer(PLAYER_2)"
+	OnCommand="x,SCREEN_WIDTH*0.75;y,SCREEN_CENTER_Y;zoomto,SCREEN_WIDTH/2,SCREEN_HEIGHT;diffuse,0,0,0,1"/>
+	
+	<LAER Type="Quad" InitCommand="%function(self) mawaru_run_controller = self end" />
+
+</children></GAME>

@@ -1,0 +1,17 @@
+return Def.ActorFrame{
+  Name= "actor_nh",
+  Def.Quad{
+    Name= "actor_oh",
+    OnCommand= cmd(stretchto,SCREEN_LEFT,SCREEN_TOP,SCREEN_RIGHT,SCREEN_BOTTOM;diffuse,color('#FFFFFF');diffusealpha,1),
+  },
+  Def.Sprite{
+    Name= "actor_ph",
+    OnCommand= cmd(x,SCREEN_CENTER_X;y,SCREEN_CENTER_Y;zoom,0;decelerate,0.3;zoom,1.3;sleep,(99.46-98.15);decelerate,0.3;x,SCREEN_CENTER_X-50;y,SCREEN_CENTER_Y-50),
+    Texture= "img 2x1.png",
+  },
+  Def.Sprite{
+    Name= "actor_qh",
+    OnCommand= cmd(x,SCREEN_CENTER_X+50;y,SCREEN_CENTER_Y+50;zoom,0;sleep,(99.46-97.85);decelerate,0.3;zoom,1.3),
+    Texture= "ayaze 2x1.png",
+  },
+}

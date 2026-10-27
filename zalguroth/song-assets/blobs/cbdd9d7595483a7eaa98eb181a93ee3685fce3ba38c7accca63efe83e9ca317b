@@ -1,0 +1,72 @@
+local function diff_to_number(difficult)--Low-grade code for compatibility reasons. -Kid
+    if not difficult then return
+    elseif difficult == 'Difficulty_Beginner' then return 0
+    elseif difficult == 'Difficulty_Easy' then return 1
+    elseif difficult == 'Difficulty_Medium' then return 2
+    elseif difficult == 'Difficulty_Hard' then return 3
+    elseif difficult == 'Difficulty_Challenge' then return 4
+    elseif difficult == 'Difficulty_Edit' then return 5
+    end
+end
+P1Steps = diff_to_number(GAMESTATE:GetCurrentSteps(PLAYER_1):GetDifficulty())--This makes things simpler. -Kid
+P2Steps = diff_to_number(GAMESTATE:GetCurrentSteps(PLAYER_2):GetDifficulty())
+
+local cond_ug_result= P1Steps<4 and P2Steps>=4
+
+local cond_sg_result= P1Steps<4 and not GAMESTATE:IsHumanPlayer(1) or P2Steps<4 and not GAMESTATE:IsHumanPlayer(0) or P1Steps<4 and P2Steps<4
+
+local cond_tg_result= P1Steps>=4 and P2Steps<4
+
+local cond_rg_result= P1Steps>=4 and not GAMESTATE:IsHumanPlayer(1) or P2Steps>=4 and not GAMESTATE:IsHumanPlayer(0) or P1Steps>=4 and P2Steps>=4
+
+--Due to GetDifficulty() returning an enum and not a number:
+--GetDifficulty()<4 becomes GetDifficulty()== ('Difficulty_Beginner' or 'Difficulty_Easy' or 'Difficulty_Medium' or 'Difficulty_Hard')
+--GetDifficulty()>=4 becomes GetDifficulty()== ('Difficulty_Challenge' or 'Difficulty_Edit')
+local function optional_actor(cond, actor)
+	if cond then return actor end
+	return Def.Actor{}
+end
+
+return Def.ActorFrame{
+  Name= "actor_vg",
+  Def.Quad{
+    Name= "actor_wg",
+    OnCommand= cmd(stretchto,SCREEN_LEFT,SCREEN_TOP,SCREEN_RIGHT,SCREEN_BOTTOM;diffuse,color('#FFFFFF');diffusealpha,1),
+  },
+  optional_actor(cond_rg_result,
+  Def.Sprite{
+    Name= "actor_xg",
+    OnCommand= cmd(x,SCREEN_CENTER_X;y,SCREEN_CENTER_Y;zoom,0;decelerate,0.3;zoom,1.3),
+    Texture= "ayaze 2x1.png",
+  }),
+  optional_actor(cond_sg_result,
+  Def.Sprite{
+    Name= "actor_yg",
+    OnCommand= cmd(x,SCREEN_CENTER_X;y,SCREEN_CENTER_Y;zoom,0;decelerate,0.3;zoom,1.3),
+    Texture= "img 2x1.png",
+  }),
+  optional_actor(cond_tg_result,
+  Def.Sprite{
+    Name= "actor_zg",
+    OnCommand= cmd(x,SCREEN_CENTER_X-160;y,SCREEN_CENTER_Y;zoom,0;decelerate,0.3;zoom,1.3),
+    Texture= "ayaze 2x1.png",
+  }),
+  optional_actor(cond_tg_result,
+  Def.Sprite{
+    Name= "actor_Ag",
+    OnCommand= cmd(x,SCREEN_CENTER_X+160;y,SCREEN_CENTER_Y;zoom,0;decelerate,0.3;zoom,1.3),
+    Texture= "img 2x1.png",
+  }),
+  optional_actor(cond_ug_result,
+  Def.Sprite{
+    Name= "actor_Bg",
+    OnCommand= cmd(x,SCREEN_CENTER_X+160;y,SCREEN_CENTER_Y;zoom,0;decelerate,0.3;zoom,1.3),
+    Texture= "ayaze 2x1.png",
+  }),
+  optional_actor(cond_ug_result,
+  Def.Sprite{
+    Name= "actor_Cg",
+    OnCommand= cmd(x,SCREEN_CENTER_X-160;y,SCREEN_CENTER_Y;zoom,0;decelerate,0.3;zoom,1.3),
+    Texture= "img 2x1.png",
+  }),
+}

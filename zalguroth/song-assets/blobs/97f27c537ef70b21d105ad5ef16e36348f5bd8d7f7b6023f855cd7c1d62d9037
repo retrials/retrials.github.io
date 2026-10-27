@@ -1,0 +1,16 @@
+return Def.ActorFrame{
+  Name= "actor_Bb",
+  --For all: Replace CommandCommand with OnCommand. -Kid
+  Def.BitmapText{
+    Name= "actor_Cb",
+    OnCommand= cmd(x,SCREEN_CENTER_X;y,SCREEN_CENTER_Y-40;diffusealpha,0;zoom,4;decelerate,0.2;diffusealpha,1;zoom,1.7;wag;effectperiod,0.4;effectmagnitude,0,0,3;sleep,2*(99.46-98.15);accelerate,0.4;y,SCREEN_CENTER_Y + -770),
+    Font= "_eurostile outline",
+    Text= "DON'T USE THE BAR!!",
+  },
+  Def.BitmapText{
+    Name= "actor_Db",
+    OnCommand= cmd(x,SCREEN_CENTER_X;y,SCREEN_CENTER_Y+300;diffusealpha,0;sleep,(99.46-97.85);decelerate,0.2;y,SCREEN_CENTER_Y-40;diffusealpha,1;zoom,2;wag;effectperiod,0.6;effectmagnitude,0,0,-2;sleep,.7;accelerate,0.4;y,SCREEN_CENTER_Y + 290),
+    Font= "_eurostile outline",
+    Text= "\n\nOR DOUBLESTEP!!",--Replaced '::' with '\n'
+  },
+}

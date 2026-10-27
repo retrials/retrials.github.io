@@ -1,0 +1,30 @@
+<ActorFrame><children>
+
+	<Layer
+	File="bgp1.png"
+	OnCommand="%function(self)
+
+	self:x(SCREEN_CENTER_X);
+	self:y(SCREEN_CENTER_Y);
+	self:zoomto(SCREEN_WIDTH,SCREEN_HEIGHT);
+
+	end"
+	Condition="not (GAMESTATE:IsHumanPlayer(0) and GAMESTATE:GetCurrentSteps(0):GetDifficulty() == 5) and
+	not (GAMESTATE:IsHumanPlayer(1) and GAMESTATE:GetCurrentSteps(1):GetDifficulty() == 5)"
+	/>
+	
+	<Layer
+	File="bgp2.png"
+	OnCommand="%function(self)
+
+	self:x(SCREEN_CENTER_X);
+	self:y(SCREEN_CENTER_Y);
+	self:zoomto(SCREEN_WIDTH,SCREEN_HEIGHT);
+
+	end"
+	Condition="(GAMESTATE:IsHumanPlayer(0) and GAMESTATE:GetCurrentSteps(0):GetDifficulty() == 5) or
+	(GAMESTATE:IsHumanPlayer(1) and GAMESTATE:GetCurrentSteps(1):GetDifficulty() == 5)"
+	/>
+	
+
+</children></ActorFrame>

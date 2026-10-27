@@ -1,0 +1,10 @@
+<ActorFrame><children>
+<Layer
+File="file"
+OnCommand="x,SCREEN_CENTER_X;y,SCREEN_CENTER_Y;diffusealpha,0;sleep,24.14-2.29;linear,0;diffusealpha,1;sleep,10;linear,0.5;diffusealpha,0"
+/>
+<Layer
+File="intro_img"
+OnCommand="x,SCREEN_CENTER_X;y,SCREEN_CENTER_Y;diffusealpha,0;sleep,1;linear,0.5;diffusealpha,1;sleep,((24.14-2.29))+0.1-1.5;linear,0;diffusealpha,0"
+/>
+</children></ActorFrame>

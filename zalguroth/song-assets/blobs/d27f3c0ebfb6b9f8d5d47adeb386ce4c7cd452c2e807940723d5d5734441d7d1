@@ -1,0 +1,77 @@
+local function diff_to_num(difficulty)--Yes, it's dumb, but I'm lazy. -Kid
+    if difficulty == 'Difficulty_Beginner' then return 0 end
+    if difficulty == 'Difficulty_Easy' then return 1 end
+    if difficulty == 'Difficulty_Medium' then return 2 end
+    if difficulty == 'Difficulty_Hard' then return 3 end
+    if difficulty == 'Difficulty_Challenge' then return 4 end
+    if difficulty == 'Difficulty_Edit' then return 5 end
+end
+local cond_sf_result= GAMESTATE:IsHumanPlayer(0)
+
+local cond_tf_result= GAMESTATE:IsHumanPlayer(1)
+
+local function optional_actor(cond, actor)
+	if cond then return actor end
+	return Def.Actor{}
+end
+
+return Def.ActorFrame{
+  Name= "actor_uf",
+  Def.Sprite{
+    Name= "actor_vf",--Added zoomtowidth. -Kid
+    OnCommand= cmd(x,SCREEN_CENTER_X + 0;y,SCREEN_CENTER_Y + 0;zoomtowidth,SCREEN_WIDTH;diffusealpha,0;linear,.5;diffusealpha,1;sleep,6;linear,0.3;diffusealpha,0),
+    Texture= "gee-bg.png",
+  },
+  optional_actor(cond_sf_result,
+      --Layer isn't an actual type! Replaced with Def.Sprite. -Kid
+      --File= replaced with Texture=. -Kid
+  Def.Sprite{
+    Name= "actor_wf",
+    Texture= 'chart'..diff_to_num(GAMESTATE:GetCurrentSteps(PLAYER_1):GetDifficulty())..' 1',
+    OnCommand= cmd(x,SCREEN_CENTER_X + 0;y,SCREEN_CENTER_Y + -120;diffusealpha,0;linear,.6;cropleft,0.05;diffusealpha,1;linear,0.6;sleep,0;cropleft,0.1;linear,2.4;cropleft,0.9;linear,0.3;cropleft,1),
+  }),
+  optional_actor(cond_sf_result,
+  Def.Sprite{
+    Name= "actor_xf",
+    Texture= 'chart'..diff_to_num(GAMESTATE:GetCurrentSteps(PLAYER_1):GetDifficulty())..' 2',
+    OnCommand= cmd(x,SCREEN_CENTER_X + 0;y,SCREEN_CENTER_Y + -120;diffusealpha,0;sleep,3.4;linear,.1;cropleft,0.05;diffusealpha,1;linear,0.1;sleep,0;cropleft,0.1;linear,2.4;cropleft,0.9;linear,0.3;cropleft,1),
+  }),
+  optional_actor(cond_sf_result,
+  Def.Sprite{
+    Name= "actor_yf",
+    OnCommand= cmd(x,((-576-64)/2)+10;y,SCREEN_CENTER_Y + -240;horizalign,right;vertalign,top;linear,1.2;x,SCREEN_CENTER_X + -256;linear,2.4;x,SCREEN_CENTER_X + 256;linear,2.4;x,SCREEN_CENTER_X + 780),
+    Texture= "music line.png",
+  }),
+  optional_actor(cond_sf_result,
+  Def.Sprite{
+    Name= "actor_zf",
+    OnCommand= cmd(x,((-576-64)/2)+10;y,SCREEN_CENTER_Y + -240;horizalign,right;vertalign,top;sleep,2.4;linear,1.2;x,SCREEN_CENTER_X + -256;linear,2.4;x,SCREEN_CENTER_X + 256;linear,0.3;diffusealpha,0),
+    Texture= "music line.png",
+  }),
+  optional_actor(cond_tf_result,
+      --Layer isn't an actual type! Replaced with Def.Sprite. -Kid
+      --File= replaced with Texture=. -Kid
+  Def.Sprite{
+    Name= "actor_Af",
+    Texture= 'chart'..diff_to_num(GAMESTATE:GetCurrentSteps(PLAYER_2):GetDifficulty())..' 1',
+    OnCommand= cmd(x,SCREEN_CENTER_X + 0;y,SCREEN_CENTER_Y + 120;diffusealpha,0;linear,.6;cropleft,0.05;diffusealpha,1;linear,0.6;sleep,0;cropleft,0.1;linear,2.4;cropleft,0.9;linear,0.3;cropleft,1),
+  }),
+  optional_actor(cond_tf_result,
+  Def.Sprite{
+    Name= "actor_Bf",
+    Texture= 'chart'..diff_to_num(GAMESTATE:GetCurrentSteps(PLAYER_2):GetDifficulty())..' 2',
+    OnCommand= cmd(x,SCREEN_CENTER_X + 0;y,SCREEN_CENTER_Y + 120;diffusealpha,0;sleep,3.4;linear,.1;cropleft,0.05;diffusealpha,1;linear,0.1;sleep,0;cropleft,0.1;linear,2.4;cropleft,0.9;linear,0.3;cropleft,1),
+  }),
+  optional_actor(cond_tf_result,
+  Def.Sprite{
+    Name= "actor_Cf",
+    OnCommand= cmd(x,((-576-64)/2)+10;y,SCREEN_CENTER_Y + 0;horizalign,right;vertalign,top;linear,1.2;x,SCREEN_CENTER_X + -256;linear,2.4;x,SCREEN_CENTER_X + 256;linear,2.4;x,SCREEN_CENTER_X + 780),
+    Texture= "music line.png",
+  }),
+  optional_actor(cond_tf_result,
+  Def.Sprite{
+    Name= "actor_Df",
+    OnCommand= cmd(x,((-576-64)/2)+10;y,SCREEN_CENTER_Y + 0;horizalign,right;vertalign,top;sleep,2.4;linear,1.2;x,SCREEN_CENTER_X + -256;linear,2.4;x,SCREEN_CENTER_X + 256;linear,0.3;diffusealpha,0),
+    Texture= "music line.png",
+  }),
+}

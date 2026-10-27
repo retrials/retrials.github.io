@@ -1,0 +1,29 @@
+return Def.ActorFrame{
+  Name= "actor_jd",
+  Def.Sprite{
+    Name= "actor_kd",
+    OnCommand= cmd(x,SCREEN_CENTER_X;y,SCREEN_CENTER_Y-60;stretchto,SCREEN_LEFT,0,SCREEN_RIGHT,300;diffusealpha,0;sleep,29-2.02;sleep,0.5;decelerate,0.2;stretchto,SCREEN_LEFT,100,SCREEN_RIGHT,200;diffusealpha,0.6;sleep,3;linear,0.5;diffusealpha,0),
+    Texture= "../../_black.png",
+  },
+  Def.BitmapText{
+    Name= "actor_ld",
+    Font= "_eurostile outline",
+    OnCommand= cmd(x,SCREEN_CENTER_X;y,SCREEN_CENTER_Y-90;diffusealpha,0;zoom,4;sleep,29-2.02;sleep,0.5;decelerate,0.2;diffusealpha,1;zoom,1;sleep,3;accelerate,0.3;diffusealpha,0),
+    Text= "Mawaru (Japanese): To turn,\nchange, or to visit many paces.",--replaced '::' with '\n'
+  },
+  Def.Sprite{
+    Name= "actor_md",
+    OnCommand= cmd(x,SCREEN_CENTER_X;y,SCREEN_CENTER_Y;stretchto,SCREEN_LEFT,SCREEN_TOP,SCREEN_RIGHT,SCREEN_BOTTOM;diffusealpha,0;sleep,24-2.02;sleep,2;zoom,4;decelerate,0.3;zoom,1;diffusealpha,1;sleep,6;linear,0.5;diffusealpha,0),
+    Texture= "mawaru.png",
+  },
+  Def.Sprite{
+    Name= "actor_nd",
+    OnCommand= cmd(x,SCREEN_CENTER_X;y,SCREEN_CENTER_Y;stretchto,SCREEN_LEFT,SCREEN_TOP,SCREEN_RIGHT,SCREEN_BOTTOM;diffusealpha,0;sleep,24-2.02;sleep,4;zoom,4;decelerate,0.3;zoom,1;diffusealpha,1;sleep,4;linear,0.5;diffusealpha,0),
+    Texture= "finale.png",
+  },
+  Def.Sprite{
+    Name= "actor_od",--Added zoomtowidth. -Kid
+    OnCommand= cmd(x,SCREEN_CENTER_X;y,SCREEN_CENTER_Y;zoomtowidth,SCREEN_WIDTH;diffusealpha,0;sleep,24.14-2.29;linear,0;diffuse,color('.8,.8,.8,1');diffusealpha,1;sleep,.25;linear,0;diffusealpha,0),
+    Texture= "nope.png",
+  },
+}

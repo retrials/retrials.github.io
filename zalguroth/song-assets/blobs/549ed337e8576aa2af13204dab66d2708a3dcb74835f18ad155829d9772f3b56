@@ -1,0 +1,321 @@
+local function diff_to_num(difficulty)--Yes, it's dumb, but I'm lazy. -Kid
+    if difficulty == 'Difficulty_Beginner' then return 0 end
+    if difficulty == 'Difficulty_Easy' then return 1 end
+    if difficulty == 'Difficulty_Medium' then return 2 end
+    if difficulty == 'Difficulty_Hard' then return 3 end
+    if difficulty == 'Difficulty_Challenge' then return 4 end
+    if difficulty == 'Difficulty_Edit' then return 5 end
+end
+P1Steps = diff_to_num(GAMESTATE:GetCurrentSteps(PLAYER_1):GetDifficulty())--This makes things simpler. -Kid
+P2Steps = diff_to_num(GAMESTATE:GetCurrentSteps(PLAYER_1):GetDifficulty())
+
+local cond_yd_result= GAMESTATE:IsHumanPlayer(0)
+
+local cond_zd_result= GAMESTATE:IsHumanPlayer(1)
+
+local cond_wd_result= GAMESTATE:IsPlayerEnabled(PLAYER_1)
+
+local cond_ae_result= GAMESTATE:IsPlayerEnabled(PLAYER_1) and GAMESTATE:GetCurrentSteps(PLAYER_1):GetDifficulty()== 'Difficulty_Beginner'
+
+local cond_Ed_result= GAMESTATE:IsPlayerEnabled(PLAYER_1) and GAMESTATE:GetCurrentSteps(PLAYER_1):GetDifficulty()== 'Difficulty_Easy'
+
+local cond_Cd_result= GAMESTATE:IsPlayerEnabled(PLAYER_1) and GAMESTATE:GetCurrentSteps(PLAYER_1):GetDifficulty()== 'Difficulty_Medium'
+
+local cond_Ad_result= GAMESTATE:IsPlayerEnabled(PLAYER_1) and P1Steps>=3
+
+local cond_xd_result= GAMESTATE:IsPlayerEnabled(PLAYER_2)
+
+local cond_be_result= GAMESTATE:IsPlayerEnabled(PLAYER_2) and GAMESTATE:GetCurrentSteps(PLAYER_2):GetDifficulty()== 'Difficulty_Beginner'
+
+local cond_Fd_result= GAMESTATE:IsPlayerEnabled(PLAYER_2) and GAMESTATE:GetCurrentSteps(PLAYER_2):GetDifficulty()== 'Difficulty_Easy'
+
+local cond_Dd_result= GAMESTATE:IsPlayerEnabled(PLAYER_2) and GAMESTATE:GetCurrentSteps(PLAYER_2):GetDifficulty()== 'Difficulty_Medium'
+
+local cond_Bd_result= GAMESTATE:IsPlayerEnabled(PLAYER_2) and P2Steps>=3
+
+--Due to GetDifficulty returning an enum instead of a number:
+--GetDifficulty()==0 becomes GetDifficulty()== 'Difficulty_Beginner'
+--GetDifficulty()==1 becomes GetDifficulty()== 'Difficulty_Easy'
+--GetDifficulty()==2 becomes GetDifficulty()== 'Difficulty_Medium'
+local function optional_actor(cond, actor)
+	if cond then return actor end
+	return Def.Actor{}
+end
+
+return Def.ActorFrame{
+  Name= "actor_ce",
+  Def.Sprite{
+    Name= "actor_de",
+    OnCommand= cmd(x,SCREEN_CENTER_X + 0;y,SCREEN_CENTER_Y + 0;diffusealpha,0;linear,.5;diffusealpha,1;sleep,8;linear,1;diffusealpha,0),
+    Texture= "black.png",
+  },
+  Def.Sprite{
+    Name= "actor_ee",
+    OnCommand= cmd(x,SCREEN_CENTER_X + 0;y,SCREEN_CENTER_Y + 0;diffusealpha,0;sleep,.5;linear,.5;diffusealpha,1;sleep,8;linear,1;diffusealpha,0),
+    Texture= "black_bottom.png",
+  },
+  Def.Sprite{
+    Name= "actor_fe",
+    OnCommand= cmd(blend,"BlendMode_NoEffect";zwrite,1;clearzbuffer,1;x,SCREEN_CENTER_X + 640;y,SCREEN_CENTER_Y + 0;decelerate,.6;x,SCREEN_CENTER_X + 0),
+    Texture= "mask.png",--Modified to fit 16:9 screen. -Kid
+  },
+  optional_actor(cond_wd_result,
+  Def.Sprite{
+    Name= "actor_ge",
+    OnCommand= cmd(x,SCREEN_CENTER_X + 640;y,SCREEN_CENTER_Y + 0;decelerate,.6;x,SCREEN_CENTER_X + 0;sleep,8;linear,.6;diffusealpha,0),
+    Texture= "notefieldp1.png",
+  }),
+  optional_actor(cond_xd_result,
+  Def.Sprite{
+    Name= "actor_he",
+    OnCommand= cmd(x,SCREEN_CENTER_X + 640;y,SCREEN_CENTER_Y + 0;sleep,.2;decelerate,.6;x,SCREEN_CENTER_X + 0;sleep,8;linear,.6;diffusealpha,0),
+    Texture= "notefieldp2.png",
+  }),
+  Def.ActorFrame{
+    Name= "actor_ie",
+    optional_actor(cond_yd_result,
+      --Layer isn't an actual type! Replaced with Def.Sprite. -Kid
+      --File= replaced with Texture=. -Kid
+    Def.Sprite{
+      Name= "actor_je",--Reconverted x positions by hand. -Kid
+      Texture= diff_to_num(GAMESTATE:GetCurrentSteps(PLAYER_1):GetDifficulty()),
+      OnCommand= cmd(ztest,1;horizalign,left;x,SCREEN_CENTER_X + 30;y,SCREEN_CENTER_Y + -70;linear,15.2;x,SCREEN_CENTER_X - 3377.78;linear,.6;diffusealpha,0;x,SCREEN_CENTER_X - 3200),
+    }),
+    optional_actor(cond_zd_result,
+    Def.Sprite{
+      Name= "actor_ke",--Reconverted x positions by hand. -Kid
+      Texture= diff_to_num(GAMESTATE:GetCurrentSteps(PLAYER_2):GetDifficulty()),
+      OnCommand= cmd(ztest,1;horizalign,left;x,SCREEN_CENTER_X + 30;y,SCREEN_CENTER_Y + 66;linear,15.2;x,SCREEN_CENTER_X - 3377.78;linear,.6;diffusealpha,0;x,SCREEN_CENTER_X - 3200),
+    }),
+  },
+  optional_actor(cond_Ad_result,
+  Def.ActorFrame{
+    Name= "actor_le",
+    OnCommand= cmd(x,SCREEN_CENTER_X-233;y,SCREEN_CENTER_Y-82;zoom,.6;rotationx,-20),
+    VanishX= SCREEN_CENTER_X-160,
+    VanishY= SCREEN_CENTER_Y+40,
+    Def.Sprite{
+      Name= "actor_me",
+      OnCommand= cmd(y,SCREEN_CENTER_Y + -233;diffusealpha,0;linear,.5;diffusealpha,1;sleep,8;linear,.6;diffusealpha,0),
+      Texture= "platform.png",
+    },
+    Def.Sprite{
+      Name= "actor_ne",--Unconverted x positions. -Kid
+      FlashCommand= cmd(diffusealpha,1;zoom,1.1;linear,.1;zoom,1;diffusealpha,0),
+      OnCommand= cmd(x,-45;blend,"BlendMode_Add";diffusealpha,0;sleep,2.4-1.2;playcommand,"Flash";sleep,.2;playcommand,"Flash";sleep,.5;playcommand,"Flash";sleep,.2;playcommand,"Flash";sleep,.5;playcommand,"Flash";sleep,.35;playcommand,"Flash";sleep,.35;playcommand,"Flash";sleep,.2;playcommand,"Flash";sleep,.5;playcommand,"Flash";sleep,.2;playcommand,"Flash";sleep,.5;playcommand,"Flash";sleep,.2;playcommand,"Flash";sleep,.5;playcommand,"Flash";sleep,.35;playcommand,"Flash";sleep,.35;playcommand,"Flash"),
+      Texture= "panelglow.png",
+    },
+    Def.Sprite{
+      Name= "actor_oe",--Unconverted x positions. -Kid
+      FlashCommand= cmd(diffusealpha,1;zoom,1.1;linear,.1;zoom,1;diffusealpha,0),
+      OnCommand= cmd(x,45;blend,"BlendMode_Add";diffusealpha,0;sleep,2.85-1.2;playcommand,"Flash";sleep,.8;playcommand,"Flash";sleep,.2;playcommand,"Flash";sleep,1.4;playcommand,"Flash";sleep,.2;playcommand,"Flash";sleep,.5;playcommand,"Flash";sleep,.8;playcommand,"Flash";sleep,.2;playcommand,"Flash";sleep,1.4;playcommand,"Flash";sleep,.05;playcommand,"Flash";sleep,.05;playcommand,"Flash"),
+      Texture= "panelglow.png",
+    },
+  }),
+  optional_actor(cond_Bd_result,
+  Def.ActorFrame{
+    Name= "actor_pe",
+    OnCommand= cmd(x,SCREEN_CENTER_X-233;y,SCREEN_CENTER_Y+55;zoom,.6;rotationx,-20),
+    VanishX= SCREEN_CENTER_X-160,
+    VanishY= SCREEN_CENTER_Y+40,
+    Def.Sprite{
+      Name= "actor_qe",
+      OnCommand= cmd(y,SCREEN_CENTER_Y + -233;diffusealpha,0;linear,.5;diffusealpha,1;sleep,8;linear,.6;diffusealpha,0),
+      Texture= "platform.png",
+    },
+    Def.Sprite{
+      Name= "actor_re",--Unconverted x positions. -Kid
+      FlashCommand= cmd(diffusealpha,1;zoom,1.1;linear,.1;zoom,1;diffusealpha,0),
+      OnCommand= cmd(x,-45;blend,"BlendMode_Add";diffusealpha,0;sleep,2.4-1.2;playcommand,"Flash";sleep,.2;playcommand,"Flash";sleep,.5;playcommand,"Flash";sleep,.2;playcommand,"Flash";sleep,.5;playcommand,"Flash";sleep,.35;playcommand,"Flash";sleep,.35;playcommand,"Flash";sleep,.2;playcommand,"Flash";sleep,.5;playcommand,"Flash";sleep,.2;playcommand,"Flash";sleep,.5;playcommand,"Flash";sleep,.2;playcommand,"Flash";sleep,.5;playcommand,"Flash";sleep,.35;playcommand,"Flash";sleep,.35;playcommand,"Flash"),
+      Texture= "panelglow.png",
+    },
+    Def.Sprite{
+      Name= "actor_se",--Unconverted x positions. -Kid
+      FlashCommand= cmd(diffusealpha,1;zoom,1.1;linear,.1;zoom,1;diffusealpha,0),
+      OnCommand= cmd(x,45;blend,"BlendMode_Add";diffusealpha,0;sleep,2.85-1.2;playcommand,"Flash";sleep,.8;playcommand,"Flash";sleep,.2;playcommand,"Flash";sleep,1.4;playcommand,"Flash";sleep,.2;playcommand,"Flash";sleep,.5;playcommand,"Flash";sleep,.8;playcommand,"Flash";sleep,.2;playcommand,"Flash";sleep,1.4;playcommand,"Flash";sleep,.05;playcommand,"Flash";sleep,.05;playcommand,"Flash"),
+      Texture= "panelglow.png",
+    },
+  }),
+  optional_actor(cond_Cd_result,
+  Def.ActorFrame{
+    Name= "actor_te",
+    OnCommand= cmd(x,SCREEN_CENTER_X-233;y,SCREEN_CENTER_Y-82;zoom,.6;rotationx,-20),
+    VanishX= SCREEN_CENTER_X-160,
+    VanishY= SCREEN_CENTER_Y+40,
+    Def.Sprite{
+      Name= "actor_ue",
+      OnCommand= cmd(y,SCREEN_CENTER_Y + -233;diffusealpha,0;linear,.5;diffusealpha,1;sleep,8;linear,.6;diffusealpha,0),
+      Texture= "platform.png",
+    },
+    Def.Sprite{
+      Name= "actor_ve",--Unconverted x positions. -Kid
+      FlashCommand= cmd(diffusealpha,1;zoom,1.1;linear,.1;zoom,1;diffusealpha,0),
+      OnCommand= cmd(x,-45;blend,"BlendMode_Add";diffusealpha,0;sleep,2.4-1.2;playcommand,"Flash";sleep,.8;playcommand,"Flash";sleep,.8;playcommand,"Flash";sleep,.35;playcommand,"Flash";sleep,.35;playcommand,"Flash";sleep,.8;playcommand,"Flash";sleep,.8;playcommand,"Flash";sleep,.8;playcommand,"Flash";sleep,.35;playcommand,"Flash";sleep,.35;playcommand,"Flash"),
+      Texture= "panelglow.png",
+    },
+    Def.Sprite{
+      Name= "actor_we",--Unconverted x positions. -Kid
+      FlashCommand= cmd(diffusealpha,1;zoom,1.1;linear,.1;zoom,1;diffusealpha,0),
+      OnCommand= cmd(x,45;blend,"BlendMode_Add";diffusealpha,0;sleep,2.85-1.2;playcommand,"Flash";sleep,.8;playcommand,"Flash";sleep,1.7;playcommand,"Flash";sleep,.8;playcommand,"Flash";sleep,.8;playcommand,"Flash";sleep,1.7;playcommand,"Flash"),
+      Texture= "panelglow.png",
+    },
+  }),
+  optional_actor(cond_Dd_result,
+  Def.ActorFrame{
+    Name= "actor_xe",
+    OnCommand= cmd(x,SCREEN_CENTER_X-233;y,SCREEN_CENTER_Y+55;zoom,.6;rotationx,-20),
+    VanishX= SCREEN_CENTER_X-160,
+    VanishY= SCREEN_CENTER_Y+40,
+    Def.Sprite{
+      Name= "actor_ye",
+      OnCommand= cmd(y,SCREEN_CENTER_Y + -233;diffusealpha,0;linear,.5;diffusealpha,1;sleep,8;linear,.6;diffusealpha,0),
+      Texture= "platform.png",
+    },
+    Def.Sprite{
+      Name= "actor_ze",--Unconverted x positions. -Kid
+      FlashCommand= cmd(diffusealpha,1;zoom,1.1;linear,.1;zoom,1;diffusealpha,0),
+      OnCommand= cmd(x,-45;blend,"BlendMode_Add";diffusealpha,0;sleep,2.4-1.2;playcommand,"Flash";sleep,.8;playcommand,"Flash";sleep,.8;playcommand,"Flash";sleep,.35;playcommand,"Flash";sleep,.35;playcommand,"Flash";sleep,.8;playcommand,"Flash";sleep,.8;playcommand,"Flash";sleep,.8;playcommand,"Flash";sleep,.35;playcommand,"Flash";sleep,.35;playcommand,"Flash"),
+      Texture= "panelglow.png",
+    },
+    Def.Sprite{
+      Name= "actor_Ae",--Unconverted x positions. -Kid
+      FlashCommand= cmd(diffusealpha,1;zoom,1.1;linear,.1;zoom,1;diffusealpha,0),
+      OnCommand= cmd(x,45;blend,"BlendMode_Add";diffusealpha,0;sleep,2.85-1.2;playcommand,"Flash";sleep,.8;playcommand,"Flash";sleep,1.7;playcommand,"Flash";sleep,.8;playcommand,"Flash";sleep,.8;playcommand,"Flash";sleep,1.7;playcommand,"Flash"),
+      Texture= "panelglow.png",
+    },
+  }),
+  optional_actor(cond_Ed_result,
+  Def.ActorFrame{
+    Name= "actor_Be",
+    OnCommand= cmd(x,SCREEN_CENTER_X-233;y,SCREEN_CENTER_Y-82;zoom,.6;rotationx,-20),
+    VanishX= SCREEN_CENTER_X-160,
+    VanishY= SCREEN_CENTER_Y+40,
+    Def.Sprite{
+      Name= "actor_Ce",
+      OnCommand= cmd(y,SCREEN_CENTER_Y + -233;diffusealpha,0;linear,.5;diffusealpha,1;sleep,8;linear,.6;diffusealpha,0),
+      Texture= "platform.png",
+    },
+    Def.Sprite{
+      Name= "actor_De",--Unconverted x positions. -Kid
+      FlashCommand= cmd(diffusealpha,1;zoom,1.1;linear,.1;zoom,1;diffusealpha,0),
+      OnCommand= cmd(x,-45;blend,"BlendMode_Add";diffusealpha,0;sleep,2.4-1.2;playcommand,"Flash";sleep,.8;playcommand,"Flash";sleep,.8;playcommand,"Flash";sleep,.35;playcommand,"Flash";sleep,.35;playcommand,"Flash";sleep,.8;playcommand,"Flash";sleep,.8;playcommand,"Flash";sleep,.8;playcommand,"Flash";sleep,.35;playcommand,"Flash";sleep,.35;playcommand,"Flash"),
+      Texture= "panelglow.png",
+    },
+    Def.Sprite{
+      Name= "actor_Ee",--Unconverted x positions. -Kid
+      FlashCommand= cmd(diffusealpha,1;zoom,1.1;linear,.1;zoom,1;diffusealpha,0),
+      OnCommand= cmd(x,45;blend,"BlendMode_Add";diffusealpha,0;sleep,6-1.2;playcommand,"Flash";sleep,.8;playcommand,"Flash";sleep,.8;playcommand,"Flash";sleep,.35;playcommand,"Flash";sleep,.35;playcommand,"Flash"),
+      Texture= "panelglow.png",
+    },
+  }),
+  optional_actor(cond_Fd_result,
+  Def.ActorFrame{
+    Name= "actor_Fe",
+    OnCommand= cmd(x,SCREEN_CENTER_X-233;y,SCREEN_CENTER_Y+55;zoom,.6;rotationx,-20),
+    VanishX= SCREEN_CENTER_X-160,
+    VanishY= SCREEN_CENTER_Y+40,
+    Def.Sprite{
+      Name= "actor_af",
+      OnCommand= cmd(y,SCREEN_CENTER_Y + -233;diffusealpha,0;linear,.5;diffusealpha,1;sleep,8;linear,.6;diffusealpha,0),
+      Texture= "platform.png",
+    },
+    Def.Sprite{
+      Name= "actor_bf",--Unconverted x positions. -Kid
+      FlashCommand= cmd(diffusealpha,1;zoom,1.1;linear,.1;zoom,1;diffusealpha,0),
+      OnCommand= cmd(x,-45;blend,"BlendMode_Add";diffusealpha,0;sleep,2.4-1.2;playcommand,"Flash";sleep,.8;playcommand,"Flash";sleep,.8;playcommand,"Flash";sleep,.35;playcommand,"Flash";sleep,.35;playcommand,"Flash";sleep,.8;playcommand,"Flash";sleep,.8;playcommand,"Flash";sleep,.8;playcommand,"Flash";sleep,.35;playcommand,"Flash";sleep,.35;playcommand,"Flash"),
+      Texture= "panelglow.png",
+    },
+    Def.Sprite{
+      Name= "actor_cf",--Unconverted x positions. -Kid
+      FlashCommand= cmd(diffusealpha,1;zoom,1.1;linear,.1;zoom,1;diffusealpha,0),
+      OnCommand= cmd(x,45;blend,"BlendMode_Add";diffusealpha,0;sleep,6-1.2;playcommand,"Flash";sleep,.8;playcommand,"Flash";sleep,.8;playcommand,"Flash";sleep,.35;playcommand,"Flash";sleep,.35;playcommand,"Flash"),
+      Texture= "panelglow.png",
+    },
+  }),
+  optional_actor(cond_ae_result,
+  Def.ActorFrame{
+    Name= "actor_df",
+    OnCommand= cmd(x,SCREEN_CENTER_X-233;y,SCREEN_CENTER_Y-82;zoom,.6;rotationx,-20),
+    VanishX= SCREEN_CENTER_X-160,
+    VanishY= SCREEN_CENTER_Y+40,
+    Def.Sprite{
+      Name= "actor_ef",
+      OnCommand= cmd(y,SCREEN_CENTER_Y + -233;diffusealpha,0;linear,.5;diffusealpha,1;sleep,8;linear,.6;diffusealpha,0),
+      Texture= "platform.png",
+    },
+    Def.Sprite{
+      Name= "actor_ff",--Unconverted x positions. -Kid
+      FlashCommand= cmd(diffusealpha,1;zoom,1.1;linear,.1;zoom,1;diffusealpha,0),
+      OnCommand= cmd(x,-45;blend,"BlendMode_Add";diffusealpha,0;sleep,2.4-1.2;playcommand,"Flash";sleep,.8;playcommand,"Flash";sleep,.8;playcommand,"Flash"),
+      Texture= "panelglow.png",
+    },
+    Def.Sprite{
+      Name= "actor_gf",--Unconverted x positions. -Kid
+      FlashCommand= cmd(diffusealpha,1;zoom,1.1;linear,.1;zoom,1;diffusealpha,0),
+      OnCommand= cmd(x,45;blend,"BlendMode_Add";diffusealpha,0;sleep,2.4-1.2;playcommand,"Flash";sleep,.8;playcommand,"Flash";sleep,.8;playcommand,"Flash"),
+      Texture= "panelglow.png",
+    },
+    Def.Sprite{
+      Name= "actor_hf",
+      FlashCommand= cmd(diffusealpha,1;zoom,1.1;linear,.1;zoom,1;diffusealpha,0),
+      OnCommand= cmd(y,SCREEN_CENTER_Y + -285;blend,"BlendMode_Add";diffusealpha,0;sleep,6-1.2;playcommand,"Flash";sleep,.8;playcommand,"Flash";sleep,.8;playcommand,"Flash"),
+      Texture= "panelglow.png",
+    },
+    Def.Sprite{
+      Name= "actor_if",
+      FlashCommand= cmd(diffusealpha,1;zoom,1.1;linear,.1;zoom,1;diffusealpha,0),
+      OnCommand= cmd(y,SCREEN_CENTER_Y + -195;blend,"BlendMode_Add";diffusealpha,0;sleep,6-1.2;playcommand,"Flash";sleep,.8;playcommand,"Flash";sleep,.8;playcommand,"Flash"),
+      Texture= "panelglow.png",
+    },
+  }),
+  optional_actor(cond_be_result,
+  Def.ActorFrame{
+    Name= "actor_jf",
+    OnCommand= cmd(x,SCREEN_CENTER_X-233;y,SCREEN_CENTER_Y+55;zoom,.6;rotationx,-20),
+    VanishX= SCREEN_CENTER_X-160,
+    VanishY= SCREEN_CENTER_Y+40,
+    Def.Sprite{
+      Name= "actor_kf",
+      OnCommand= cmd(y,SCREEN_CENTER_Y + -233;diffusealpha,0;linear,.5;diffusealpha,1;sleep,8;linear,.6;diffusealpha,0),
+      Texture= "platform.png",
+    },
+    Def.Sprite{
+      Name= "actor_lf",--Unconverted x positions. -Kid
+      FlashCommand= cmd(diffusealpha,1;zoom,1.1;linear,.1;zoom,1;diffusealpha,0),
+      OnCommand= cmd(x,-45;blend,"BlendMode_Add";diffusealpha,0;sleep,2.4-1.2;playcommand,"Flash";sleep,.8;playcommand,"Flash";sleep,.8;playcommand,"Flash"),
+      Texture= "panelglow.png",
+    },
+    Def.Sprite{
+      Name= "actor_mf",--Unconverted x positions. -Kid
+      FlashCommand= cmd(diffusealpha,1;zoom,1.1;linear,.1;zoom,1;diffusealpha,0),
+      OnCommand= cmd(x,45;blend,"BlendMode_Add";diffusealpha,0;sleep,2.4-1.2;playcommand,"Flash";sleep,.8;playcommand,"Flash";sleep,.8;playcommand,"Flash"),
+      Texture= "panelglow.png",
+    },
+    Def.Sprite{
+      Name= "actor_nf",
+      FlashCommand= cmd(diffusealpha,1;zoom,1.1;linear,.1;zoom,1;diffusealpha,0),
+      OnCommand= cmd(y,SCREEN_CENTER_Y + -285;blend,"BlendMode_Add";diffusealpha,0;sleep,6-1.2;playcommand,"Flash";sleep,.8;playcommand,"Flash";sleep,.8;playcommand,"Flash"),
+      Texture= "panelglow.png",
+    },
+    Def.Sprite{
+      Name= "actor_of",
+      FlashCommand= cmd(diffusealpha,1;zoom,1.1;linear,.1;zoom,1;diffusealpha,0),
+      OnCommand= cmd(y,SCREEN_CENTER_Y + -195;blend,"BlendMode_Add";diffusealpha,0;sleep,6-1.2;playcommand,"Flash";sleep,.8;playcommand,"Flash";sleep,.8;playcommand,"Flash"),
+      Texture= "panelglow.png",
+    },
+  }),
+  Def.ActorFrame{
+    Name= "actor_pf",
+    OnCommand= cmd(y,SCREEN_CENTER_Y + -210),
+    Def.Sprite{
+      Name= "actor_qf",
+      OnCommand= cmd(vertalign,bottom;zoomy,.25;zoomx,.25;x,SCREEN_CENTER_X + 0;y,SCREEN_CENTER_Y + 480;sleep,2-1.2;decelerate,0.35;bounceend,.4;y,SCREEN_CENTER_Y + 272;sleep,0.1;zoomy,.235;zoomx,-.25;linear,.25;zoomy,.25;sleep,.2;zoomx,.25;decelerate,.25;zoomy,.264;accelerate,.2;zoomy,.25;sleep,0;zoomy,.235;zoomx,-.25;linear,.2;zoomy,.25;sleep,.2;zoomx,.25;decelerate,.25;zoomy,.264;accelerate,.2;zoomx,.25;zoomy,.25;decelerate,.25;zoomy,.264;accelerate,.2;zoomx,.25;zoomy,.25;decelerate,.25;zoomy,.264;accelerate,.2;zoomy,.25;sleep,0;zoomy,.235;zoomx,-.25;linear,.2;zoomy,.25;sleep,.25;diffusealpha,0),
+      Texture= "nya1.png",
+    },
+    Def.Sprite{
+      Name= "actor_rf",
+      OnCommand= cmd(vertalign,bottom;zoomy,.25;zoomx,.25;x,SCREEN_CENTER_X + 0;y,SCREEN_CENTER_Y + 272;diffusealpha,0;sleep,5.95-1.2;diffusealpha,1;decelerate,.25;zoomy,.264;accelerate,.2;zoomy,.25;zoomy,.235;sleep,0;zoomx,-.25;linear,.25;zoomy,.25;sleep,.2;zoomx,.25;decelerate,.25;zoomy,.264;accelerate,.15;zoomy,.25;sleep,0.1;zoomy,.235;zoomx,-.25;linear,.2;zoomy,.25;sleep,.2;zoomx,.25;decelerate,.25;zoomy,.264;accelerate,.2;zoomx,.25;zoomy,.25;decelerate,.25;zoomy,.264;accelerate,.2;zoomx,.25;zoomy,.25;decelerate,.25;zoomy,.264;accelerate,.15;zoomy,.25;sleep,0;zoomy,.24;zoomx,-.25;linear,.15;zoomy,.25;sleep,0;zoomy,.24;linear,.15;zoomy,.25;sleep,0;zoomy,.24;linear,.15;zoomy,.25;linear,.25;diffusealpha,0),
+      Texture= "nya1.png",
+    },
+  },
+}

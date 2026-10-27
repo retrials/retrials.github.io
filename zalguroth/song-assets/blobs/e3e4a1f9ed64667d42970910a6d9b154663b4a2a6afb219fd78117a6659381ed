@@ -1,0 +1,50 @@
+<ActorFrame> <children>
+	
+	<Layer
+		File="gee-bg.png"
+		OnCommand="x,320;y,240;diffusealpha,0;linear,.5;diffusealpha,1;sleep,6;linear,0.3;diffusealpha,0"
+	/>
+	<Layer
+		File="@'chart'..GAMESTATE:GetCurrentSteps(PLAYER_1):GetDifficulty()..' 1'"
+		OnCommand="x,320;y,120;diffusealpha,0;linear,.6;cropleft,0.05;diffusealpha,1;linear,0.6;sleep,0;cropleft,0.1;linear,2.4;cropleft,0.9;linear,0.3;cropleft,1"
+		Condition="GAMESTATE:IsHumanPlayer(0)"
+	/>
+	<Layer
+		File="@'chart'..GAMESTATE:GetCurrentSteps(PLAYER_1):GetDifficulty()..' 2'"
+		OnCommand="x,320;y,120;diffusealpha,0;sleep,3.4;linear,.1;cropleft,0.05;diffusealpha,1;linear,0.1;sleep,0;cropleft,0.1;linear,2.4;cropleft,0.9;linear,0.3;cropleft,1"
+		Condition="GAMESTATE:IsHumanPlayer(0)"
+	/>
+	<Layer
+		File="music line.png"
+		OnCommand="x,((-576-64)/2)+10;y,0;horizalign,right;vertalign,top;linear,1.2;x,64+10;linear,2.4;x,576+10;linear,2.4;x,1100+10"
+		Condition="GAMESTATE:IsHumanPlayer(0)"
+	/>
+	<Layer
+		File="music line.png"
+		OnCommand="x,((-576-64)/2)+10;y,0;horizalign,right;vertalign,top;sleep,2.4;linear,1.2;x,64+10;linear,2.4;x,576+10;linear,0.3;diffusealpha,0"
+		Condition="GAMESTATE:IsHumanPlayer(0)"
+	/>
+	
+	<Layer
+		File="@'chart'..GAMESTATE:GetCurrentSteps(PLAYER_2):GetDifficulty()..' 1'"
+		OnCommand="x,320;y,360;diffusealpha,0;linear,.6;cropleft,0.05;diffusealpha,1;linear,0.6;sleep,0;cropleft,0.1;linear,2.4;cropleft,0.9;linear,0.3;cropleft,1"
+		Condition="GAMESTATE:IsHumanPlayer(1)"
+	/>
+	<Layer
+		File="@'chart'..GAMESTATE:GetCurrentSteps(PLAYER_2):GetDifficulty()..' 2'"
+		OnCommand="x,320;y,360;diffusealpha,0;sleep,3.4;linear,.1;cropleft,0.05;diffusealpha,1;linear,0.1;sleep,0;cropleft,0.1;linear,2.4;cropleft,0.9;linear,0.3;cropleft,1"
+		Condition="GAMESTATE:IsHumanPlayer(1)"
+	/>
+	<Layer
+		File="music line.png"
+		OnCommand="x,((-576-64)/2)+10;y,240;horizalign,right;vertalign,top;linear,1.2;x,64+10;linear,2.4;x,576+10;linear,2.4;x,1100+10"
+		Condition="GAMESTATE:IsHumanPlayer(1)"
+	/>
+	<Layer
+		File="music line.png"
+		OnCommand="x,((-576-64)/2)+10;y,240;horizalign,right;vertalign,top;sleep,2.4;linear,1.2;x,64+10;linear,2.4;x,576+10;linear,0.3;diffusealpha,0"
+		Condition="GAMESTATE:IsHumanPlayer(1)"
+	/>
+	
+	
+</children> </ActorFrame>

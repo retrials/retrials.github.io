@@ -1,0 +1,177 @@
+<GAME Type="ActorFrame"><children>
+
+	<LAER Type="Quad"
+		InitCommand="%function(self)
+		
+			mawaru_taotao_obj = {}
+			mawaru_taotao_bptr = 1;
+		
+			function mawaru_taotao_place(pn,x,y)
+			
+				local b = mawaru_taotao_obj[mawaru_taotao_bptr];
+				
+				if not b then return end
+				
+				a = b.actor;
+				
+				a:hidden(0);
+				a:rainbow();
+				a:blend('add');
+				a:effectperiod(math.random(30,60)/10)
+				a:effectoffset(math.random(15,30)/10);
+				a:sleep(0);
+				a:diffusealpha(0);
+				a:zoom(1);
+				a:x(x+(SCREEN_CENTER_X*pn));
+				a:y(y);
+				a:linear(0.2);
+				a:diffusealpha(0.8);
+				a:zoom(1.2);
+				a:linear(0.7);
+				a:diffusealpha(0);
+				a:zoom(0.6);
+				
+				a:queuecommand('Hide');
+			
+				mawaru_taotao_bptr = mawaru_taotao_bptr+1;
+				if mawaru_taotao_bptr > table.getn(mawaru_taotao_obj) then
+					mawaru_taotao_bptr = 1
+				end
+			end
+			
+		end"
+		StartCommand="%function(self)
+			
+			mawaru_taotaoed = 372-.1;
+			
+			self:sleep(0.02);
+			self:queuecommand('Update');
+
+		end"
+		UpdateCommand="%function(self)
+			
+			if GAMESTATE:GetSongBeat() > mawaru_taotaoed and GAMESTATE:GetSongBeat() < 387.5 then
+				mawaru_taotao_pos1 = {x=math.random(0,SCREEN_CENTER_X*0.8)+(SCREEN_CENTER_X*0.1),y=math.random(0,SCREEN_HEIGHT*0.8)+SCREEN_HEIGHT*0.1}
+				
+				for pn=0,1 do
+					mawaru_taotao_place(pn,mawaru_taotao_pos1.x,mawaru_taotao_pos1.y)
+				end
+				
+				mawaru_taotaoed = mawaru_taotaoed+0.5;
+				
+			end
+			
+			self:sleep(0.02);
+			if mawaru_curgame == 8 then
+				self:queuecommand('Update');
+			end
+			
+		end"
+		KillCommand="%function(self)
+			--any cleanup, if necessary
+		end"
+	/>
+	
+	<Layer File="acid" OnCommand="customtexturerect,2,1,0,0;texcoordvelocity,0.05,0.3;
+	x,SCREEN_CENTER_X;y,SCREEN_CENTER_Y;zoomto,SCREEN_WIDTH,SCREEN_HEIGHT*1.1;diffusealpha,1;blend,add"/>
+	
+	<Layer Type="Quad" OnCommand="x,SCREEN_CENTER_X;y,SCREEN_CENTER_Y;zoomto,SCREEN_WIDTH,SCREEN_HEIGHT;rainbow;diffusealpha,0.3;blend,add"/>
+	
+	<LAER File="taotao" OnCommand="hidden,1;sleep,0.02;queuecommand,SetMe"
+	SetMeCommand="%function(self) table.insert(mawaru_taotao_obj,{actor = self,pn = 0,hit = false}) self:aux(table.getn(mawaru_taotao_obj)) end"
+	HideCommand="%function(self) self:hidden(1); mawaru_taotao_obj[self:getaux()].pn = 0 end" />
+	<LAER File="taotao" OnCommand="hidden,1;sleep,0.02;queuecommand,SetMe"
+	SetMeCommand="%function(self) table.insert(mawaru_taotao_obj,{actor = self,pn = 0,hit = false}) self:aux(table.getn(mawaru_taotao_obj)) end"
+	HideCommand="%function(self) self:hidden(1); mawaru_taotao_obj[self:getaux()].pn = 0 end" />
+	<LAER File="taotao" OnCommand="hidden,1;sleep,0.02;queuecommand,SetMe"
+	SetMeCommand="%function(self) table.insert(mawaru_taotao_obj,{actor = self,pn = 0,hit = false}) self:aux(table.getn(mawaru_taotao_obj)) end"
+	HideCommand="%function(self) self:hidden(1); mawaru_taotao_obj[self:getaux()].pn = 0 end" />
+	<LAER File="taotao" OnCommand="hidden,1;sleep,0.02;queuecommand,SetMe"
+	SetMeCommand="%function(self) table.insert(mawaru_taotao_obj,{actor = self,pn = 0,hit = false}) self:aux(table.getn(mawaru_taotao_obj)) end"
+	HideCommand="%function(self) self:hidden(1); mawaru_taotao_obj[self:getaux()].pn = 0 end" />
+	<LAER File="taotao" OnCommand="hidden,1;sleep,0.02;queuecommand,SetMe"
+	SetMeCommand="%function(self) table.insert(mawaru_taotao_obj,{actor = self,pn = 0,hit = false}) self:aux(table.getn(mawaru_taotao_obj)) end"
+	HideCommand="%function(self) self:hidden(1); mawaru_taotao_obj[self:getaux()].pn = 0 end" />
+	<LAER File="taotao" OnCommand="hidden,1;sleep,0.02;queuecommand,SetMe"
+	SetMeCommand="%function(self) table.insert(mawaru_taotao_obj,{actor = self,pn = 0,hit = false}) self:aux(table.getn(mawaru_taotao_obj)) end"
+	HideCommand="%function(self) self:hidden(1); mawaru_taotao_obj[self:getaux()].pn = 0 end" />
+	<LAER File="taotao" OnCommand="hidden,1;sleep,0.02;queuecommand,SetMe"
+	SetMeCommand="%function(self) table.insert(mawaru_taotao_obj,{actor = self,pn = 0,hit = false}) self:aux(table.getn(mawaru_taotao_obj)) end"
+	HideCommand="%function(self) self:hidden(1); mawaru_taotao_obj[self:getaux()].pn = 0 end" />
+	<LAER File="taotao" OnCommand="hidden,1;sleep,0.02;queuecommand,SetMe"
+	SetMeCommand="%function(self) table.insert(mawaru_taotao_obj,{actor = self,pn = 0,hit = false}) self:aux(table.getn(mawaru_taotao_obj)) end"
+	HideCommand="%function(self) self:hidden(1); mawaru_taotao_obj[self:getaux()].pn = 0 end" />
+	<LAER File="taotao" OnCommand="hidden,1;sleep,0.02;queuecommand,SetMe"
+	SetMeCommand="%function(self) table.insert(mawaru_taotao_obj,{actor = self,pn = 0,hit = false}) self:aux(table.getn(mawaru_taotao_obj)) end"
+	HideCommand="%function(self) self:hidden(1); mawaru_taotao_obj[self:getaux()].pn = 0 end" />
+	<LAER File="taotao" OnCommand="hidden,1;sleep,0.02;queuecommand,SetMe"
+	SetMeCommand="%function(self) table.insert(mawaru_taotao_obj,{actor = self,pn = 0,hit = false}) self:aux(table.getn(mawaru_taotao_obj)) end"
+	HideCommand="%function(self) self:hidden(1); mawaru_taotao_obj[self:getaux()].pn = 0 end" />
+	<LAER File="taotao" OnCommand="hidden,1;sleep,0.02;queuecommand,SetMe"
+	SetMeCommand="%function(self) table.insert(mawaru_taotao_obj,{actor = self,pn = 0,hit = false}) self:aux(table.getn(mawaru_taotao_obj)) end"
+	HideCommand="%function(self) self:hidden(1); mawaru_taotao_obj[self:getaux()].pn = 0 end" />
+	<LAER File="taotao" OnCommand="hidden,1;sleep,0.02;queuecommand,SetMe"
+	SetMeCommand="%function(self) table.insert(mawaru_taotao_obj,{actor = self,pn = 0,hit = false}) self:aux(table.getn(mawaru_taotao_obj)) end"
+	HideCommand="%function(self) self:hidden(1); mawaru_taotao_obj[self:getaux()].pn = 0 end" />
+	<LAER File="taotao" OnCommand="hidden,1;sleep,0.02;queuecommand,SetMe"
+	SetMeCommand="%function(self) table.insert(mawaru_taotao_obj,{actor = self,pn = 0,hit = false}) self:aux(table.getn(mawaru_taotao_obj)) end"
+	HideCommand="%function(self) self:hidden(1); mawaru_taotao_obj[self:getaux()].pn = 0 end" />
+	<LAER File="taotao" OnCommand="hidden,1;sleep,0.02;queuecommand,SetMe"
+	SetMeCommand="%function(self) table.insert(mawaru_taotao_obj,{actor = self,pn = 0,hit = false}) self:aux(table.getn(mawaru_taotao_obj)) end"
+	HideCommand="%function(self) self:hidden(1); mawaru_taotao_obj[self:getaux()].pn = 0 end" />
+	<LAER File="taotao" OnCommand="hidden,1;sleep,0.02;queuecommand,SetMe"
+	SetMeCommand="%function(self) table.insert(mawaru_taotao_obj,{actor = self,pn = 0,hit = false}) self:aux(table.getn(mawaru_taotao_obj)) end"
+	HideCommand="%function(self) self:hidden(1); mawaru_taotao_obj[self:getaux()].pn = 0 end" />
+	<LAER File="taotao" OnCommand="hidden,1;sleep,0.02;queuecommand,SetMe"
+	SetMeCommand="%function(self) table.insert(mawaru_taotao_obj,{actor = self,pn = 0,hit = false}) self:aux(table.getn(mawaru_taotao_obj)) end"
+	HideCommand="%function(self) self:hidden(1); mawaru_taotao_obj[self:getaux()].pn = 0 end" />
+	<LAER File="taotao" OnCommand="hidden,1;sleep,0.02;queuecommand,SetMe"
+	SetMeCommand="%function(self) table.insert(mawaru_taotao_obj,{actor = self,pn = 0,hit = false}) self:aux(table.getn(mawaru_taotao_obj)) end"
+	HideCommand="%function(self) self:hidden(1); mawaru_taotao_obj[self:getaux()].pn = 0 end" />
+	<LAER File="taotao" OnCommand="hidden,1;sleep,0.02;queuecommand,SetMe"
+	SetMeCommand="%function(self) table.insert(mawaru_taotao_obj,{actor = self,pn = 0,hit = false}) self:aux(table.getn(mawaru_taotao_obj)) end"
+	HideCommand="%function(self) self:hidden(1); mawaru_taotao_obj[self:getaux()].pn = 0 end" />
+	<LAER File="taotao" OnCommand="hidden,1;sleep,0.02;queuecommand,SetMe"
+	SetMeCommand="%function(self) table.insert(mawaru_taotao_obj,{actor = self,pn = 0,hit = false}) self:aux(table.getn(mawaru_taotao_obj)) end"
+	HideCommand="%function(self) self:hidden(1); mawaru_taotao_obj[self:getaux()].pn = 0 end" />
+	<LAER File="taotao" OnCommand="hidden,1;sleep,0.02;queuecommand,SetMe"
+	SetMeCommand="%function(self) table.insert(mawaru_taotao_obj,{actor = self,pn = 0,hit = false}) self:aux(table.getn(mawaru_taotao_obj)) end"
+	HideCommand="%function(self) self:hidden(1); mawaru_taotao_obj[self:getaux()].pn = 0 end" />
+	<LAER File="taotao" OnCommand="hidden,1;sleep,0.02;queuecommand,SetMe"
+	SetMeCommand="%function(self) table.insert(mawaru_taotao_obj,{actor = self,pn = 0,hit = false}) self:aux(table.getn(mawaru_taotao_obj)) end"
+	HideCommand="%function(self) self:hidden(1); mawaru_taotao_obj[self:getaux()].pn = 0 end" />
+	<LAER File="taotao" OnCommand="hidden,1;sleep,0.02;queuecommand,SetMe"
+	SetMeCommand="%function(self) table.insert(mawaru_taotao_obj,{actor = self,pn = 0,hit = false}) self:aux(table.getn(mawaru_taotao_obj)) end"
+	HideCommand="%function(self) self:hidden(1); mawaru_taotao_obj[self:getaux()].pn = 0 end" />
+	<LAER File="taotao" OnCommand="hidden,1;sleep,0.02;queuecommand,SetMe"
+	SetMeCommand="%function(self) table.insert(mawaru_taotao_obj,{actor = self,pn = 0,hit = false}) self:aux(table.getn(mawaru_taotao_obj)) end"
+	HideCommand="%function(self) self:hidden(1); mawaru_taotao_obj[self:getaux()].pn = 0 end" />
+	<LAER File="taotao" OnCommand="hidden,1;sleep,0.02;queuecommand,SetMe"
+	SetMeCommand="%function(self) table.insert(mawaru_taotao_obj,{actor = self,pn = 0,hit = false}) self:aux(table.getn(mawaru_taotao_obj)) end"
+	HideCommand="%function(self) self:hidden(1); mawaru_taotao_obj[self:getaux()].pn = 0 end" />
+	<LAER File="taotao" OnCommand="hidden,1;sleep,0.02;queuecommand,SetMe"
+	SetMeCommand="%function(self) table.insert(mawaru_taotao_obj,{actor = self,pn = 0,hit = false}) self:aux(table.getn(mawaru_taotao_obj)) end"
+	HideCommand="%function(self) self:hidden(1); mawaru_taotao_obj[self:getaux()].pn = 0 end" />
+	<LAER File="taotao" OnCommand="hidden,1;sleep,0.02;queuecommand,SetMe"
+	SetMeCommand="%function(self) table.insert(mawaru_taotao_obj,{actor = self,pn = 0,hit = false}) self:aux(table.getn(mawaru_taotao_obj)) end"
+	HideCommand="%function(self) self:hidden(1); mawaru_taotao_obj[self:getaux()].pn = 0 end" />
+	<LAER File="taotao" OnCommand="hidden,1;sleep,0.02;queuecommand,SetMe"
+	SetMeCommand="%function(self) table.insert(mawaru_taotao_obj,{actor = self,pn = 0,hit = false}) self:aux(table.getn(mawaru_taotao_obj)) end"
+	HideCommand="%function(self) self:hidden(1); mawaru_taotao_obj[self:getaux()].pn = 0 end" />
+	<LAER File="taotao" OnCommand="hidden,1;sleep,0.02;queuecommand,SetMe"
+	SetMeCommand="%function(self) table.insert(mawaru_taotao_obj,{actor = self,pn = 0,hit = false}) self:aux(table.getn(mawaru_taotao_obj)) end"
+	HideCommand="%function(self) self:hidden(1); mawaru_taotao_obj[self:getaux()].pn = 0 end" />
+	<LAER File="taotao" OnCommand="hidden,1;sleep,0.02;queuecommand,SetMe"
+	SetMeCommand="%function(self) table.insert(mawaru_taotao_obj,{actor = self,pn = 0,hit = false}) self:aux(table.getn(mawaru_taotao_obj)) end"
+	HideCommand="%function(self) self:hidden(1); mawaru_taotao_obj[self:getaux()].pn = 0 end" />
+	<LAER File="taotao" OnCommand="hidden,1;sleep,0.02;queuecommand,SetMe"
+	SetMeCommand="%function(self) table.insert(mawaru_taotao_obj,{actor = self,pn = 0,hit = false}) self:aux(table.getn(mawaru_taotao_obj)) end"
+	HideCommand="%function(self) self:hidden(1); mawaru_taotao_obj[self:getaux()].pn = 0 end" />
+	<LAER File="taotao" OnCommand="hidden,1;sleep,0.02;queuecommand,SetMe"
+	SetMeCommand="%function(self) table.insert(mawaru_taotao_obj,{actor = self,pn = 0,hit = false}) self:aux(table.getn(mawaru_taotao_obj)) end"
+	HideCommand="%function(self) self:hidden(1); mawaru_taotao_obj[self:getaux()].pn = 0 end" />
+	<LAER File="taotao" OnCommand="hidden,1;sleep,0.02;queuecommand,SetMe"
+	SetMeCommand="%function(self) table.insert(mawaru_taotao_obj,{actor = self,pn = 0,hit = false}) self:aux(table.getn(mawaru_taotao_obj)) end"
+	HideCommand="%function(self) self:hidden(1); mawaru_taotao_obj[self:getaux()].pn = 0 end" />
+
+</children></GAME>

@@ -1,0 +1,94 @@
+return Def.ActorFrame{
+  Name= "actor_wC",
+  Def.Quad{
+    Name= "actor_xC",
+    InitCommand= function(self)
+		
+			--this is where variables go when the simfile starts up
+			--function declarations, and things that will never change even
+			--if this particular minigame is restarted after being played once before
+		
+			--for storing if a button is held down
+			mawaru_gamename_held = {0,0,0,0,0,0,0,0};
+			
+		end,
+    KillCommand= function(self)
+			--any cleanup, if necessary
+		end,
+    StartCommand= function(self)
+			
+			--variables set up when a game is started
+			--wait 2 seconds (for the curtain or whatever) before accepting any inputs
+			mawaru_gamename_lockinput = {2,2};
+			
+			self:sleep(0.02);
+			self:queuecommand('Update');
+
+		end,
+    UpdateCommand= function(self)
+			
+			--game logic
+			
+			for pn=1,2 do
+				
+				if mawaru_gamename_lockinput[pn]>0 then
+					mawaru_gamename_lockinput[pn] = mawaru_gamename_lockinput[pn]-0.02
+				end
+			
+				local bpn = pn-1;
+				for i=1,4 do
+					
+					----------------------handle button presses-------------------
+					if mawaru_gamename_lockinput[pn] <= 0 then
+						if mawaru_keys[i+(bpn*4)] == 1 and mawaru_gamename_held[i+(bpn*4)] == 0 then
+							
+							mawaru_gamename_held[i+(bpn*4)] = 1
+						end
+						
+						--[[
+						--detecting if a button has been pressed, for example
+						if mawaru_keys[i+(bpn*4)] == 1 and i==3 then
+							--detects if the current player being checked is holding up (i=3)
+						end
+						
+						if mawaru_keys[2+(bpn*4)] == 1 then
+							--detects if the current player being checked is holding down
+						end
+						
+						if mawaru_keys[i+(bpn*4)] == 1 and mawaru_gamename_held[i+(bpn*4)] == 0 and i == 4 then
+							--detects if the current player in the loop has pressed right (i=4) and they aren't holding it
+							--(mawaru_gamename_held[current button] is equal to 0)
+							
+							mawaru_gamename_held[i+(bpn*4)] = 1
+							--set the button to held, so we can't run this first press code again until the button is released
+						end
+						]]
+						
+					end
+					
+					
+					
+					
+					
+					----------------------don't touch this------------------------
+					--release all buttons - used for detecting if a button is newly pressed, as opposed to held
+					if mawaru_keys[i+(bpn*4)] == 0 then
+						mawaru_gamename_held[i+(bpn*4)] = 0
+					end
+					---------------------end don't touch this----------------------
+					
+				end
+			end
+			
+			self:sleep(0.02);
+			if mawaru_curgame == game_id then
+				self:queuecommand('Update');
+			end
+			
+		end,
+  },
+  Def.Quad{
+    Name= "actor_yC",
+    InitCommand= function(self) mawaru_gamename_controller = self end,
+  },
+}
